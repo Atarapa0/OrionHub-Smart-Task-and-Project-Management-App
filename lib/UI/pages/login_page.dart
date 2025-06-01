@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:todo_list/UI/pages/home_page.dart';
 import 'package:todo_list/UI/pages/register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,30 +15,71 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> _loginUser() async {
-    final supabase = Supabase.instance.client;
+    try {
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lütfen email ve şifre giriniz')),
+        );
+        return;
+      }
 
-    final res = await supabase.auth.signInWithPassword(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-    final user = res.user;
+      final supabase = Supabase.instance.client;
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Giriş başarısız')),
+      final res = await supabase.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
-      return;
+      
+      final user = res.user;
+      if (user == null) {
+        throw Exception('Giriş başarısız');
+      }
+
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile == null) {
+          // Profil bulunamadı, yeni profil oluştur
+          await supabase.from('profiles').insert({
+            'id': user.id,
+            'ad': 'Kullanıcı',
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        }
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hoşgeldin ${profile?['ad'] ?? 'Kullanıcı'}')),
+        );
+        
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const HomePage())
+        );
+      } catch (e) {
+        debugPrint('Profil hatası: $e');
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil bilgileri alınamadı')),
+        );
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const HomePage())
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email veya şifre hatalı')),
+      );
     }
-
-    final profile = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Hoşgeldin ${profile['ad']}')),
-    );
   }
 
   @override
