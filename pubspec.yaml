@@ -38,6 +38,7 @@ dependencies:
   http: ^1.4.0
   shared_preferences: ^2.5.3
   supabase_flutter: ^2.9.0
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:
