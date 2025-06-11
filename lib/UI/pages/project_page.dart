@@ -15,7 +15,7 @@ class ProjectPage extends StatefulWidget {
 class _ProjectPageState extends State<ProjectPage> {
   late Future<List<Project>> _projectsFuture;
   final _projectService = ProjectService();
-  
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +47,7 @@ class _ProjectPageState extends State<ProjectPage> {
     final descriptionController = TextEditingController();
 
     if (!mounted) return;
-    
+
     final dialogContext = context;
     final result = await showDialog(
       context: dialogContext,
@@ -91,29 +91,31 @@ class _ProjectPageState extends State<ProjectPage> {
 
     if (titleController.text.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen proje adını girin')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lütfen proje adını girin')));
       return;
     }
 
     final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Oturum açmanız gerekiyor')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Oturum açmanız gerekiyor')));
       return;
     }
 
     try {
-      await _projectService.addProject(Project(
-        title: titleController.text,
-        description: descriptionController.text,
-        createdBy: currentUser.id,
-        createdAt: DateTime.now().toUtc(),
-      ));
-      
+      await _projectService.addProject(
+        Project(
+          title: titleController.text,
+          description: descriptionController.text,
+          createdBy: currentUser.id,
+          createdAt: DateTime.now().toUtc(),
+        ),
+      );
+
       if (!mounted) return;
       _refreshProjects();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,9 +123,9 @@ class _ProjectPageState extends State<ProjectPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Proje oluşturulurken hata: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Proje oluşturulurken hata: $e')));
     } finally {
       titleController.dispose();
       descriptionController.dispose();
@@ -177,7 +179,10 @@ class _ProjectPageState extends State<ProjectPage> {
               itemBuilder: (context, index) {
                 final project = projects[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: ListTile(
                     title: Text(project.title),
                     subtitle: Text(project.description ?? ''),
@@ -200,7 +205,7 @@ class _ProjectPageState extends State<ProjectPage> {
         onPressed: _showAddProjectDialog,
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: const BottomNavigationController(),
+      bottomNavigationBar: const BottomNavigationController(initialIndex: 1),
     );
   }
 }

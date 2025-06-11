@@ -280,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-      bottomNavigationBar: const BottomNavigationController(),
+      bottomNavigationBar: const BottomNavigationController(initialIndex: 2),
     );
   }
 }
