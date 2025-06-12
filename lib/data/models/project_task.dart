@@ -16,6 +16,7 @@ class ProjectTask {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? completedAt;
+  String? projectTitle; // Proje başlığı (bildirimler için)
 
   ProjectTask({
     this.id,
@@ -33,6 +34,7 @@ class ProjectTask {
     this.createdAt,
     this.updatedAt,
     this.completedAt,
+    this.projectTitle,
   });
 
   factory ProjectTask.fromJson(Map<String, dynamic> json) {

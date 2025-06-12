@@ -108,7 +108,7 @@ class ProjectManagementService {
     }
   }
 
-  // Projeye üye ekle (direkt ekleme)
+  // Projeye üye davet et (davet sistemi)
   Future<bool> addMemberToProject({
     required String projectId,
     required String userEmail,
@@ -127,38 +127,54 @@ class ProjectManagementService {
           .eq('user_email', userEmail)
           .maybeSingle();
 
-      if (existingMember != null) {
-        if (existingMember['status'] == 'active') {
-          throw Exception('Bu kullanıcı zaten proje üyesi');
-        } else {
-          // Eğer daha önce çıkarılmış veya davet edilmişse, tekrar aktif yap
-          await _supabase
-              .from('project_members')
-              .update({
-                'status': 'active',
-                'role': role,
-                'joined_at': DateTime.now().toIso8601String(),
-              })
-              .eq('id', existingMember['id']);
-          return true;
-        }
+      if (existingMember != null && existingMember['status'] == 'active') {
+        throw Exception('Bu kullanıcı zaten proje üyesi');
       }
 
-      // Yeni üye ekle
-      await _supabase.from('project_members').insert({
+      // Bekleyen davet var mı kontrol et
+      final existingInvitation = await _supabase
+          .from('project_invitations')
+          .select('id, status')
+          .eq('project_id', projectId)
+          .eq('invited_email', userEmail)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existingInvitation != null) {
+        throw Exception('Bu kullanıcıya zaten davet gönderilmiş');
+      }
+
+      // Davet token'ı oluştur
+      final invitationToken = _generateInvitationToken();
+
+      // Proje davetini oluştur
+      await _supabase.from('project_invitations').insert({
         'project_id': projectId,
-        'user_email': userEmail,
-        'user_name': userName,
-        'role': role,
-        'status': 'active',
+        'invited_email': userEmail,
         'invited_by': currentUserEmail,
+        'invitation_token': invitationToken,
+        'role': role,
+        'status': 'pending',
+        'message': 'Projeye katılmaya davet edildiniz.',
       });
 
       return true;
     } catch (e) {
-      debugPrint('Üye ekleme hatası: $e');
-      throw Exception('Üye eklenemedi: $e');
+      debugPrint('Davet gönderme hatası: $e');
+      throw Exception('Davet gönderilemedi: $e');
     }
+  }
+
+  // Davet token'ı oluştur
+  String _generateInvitationToken() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+        32,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
   }
 
   // Üye rolünü güncelle
@@ -298,7 +314,7 @@ class ProjectManagementService {
   }
 
   // Yeni görev ekle
-  Future<bool> addProjectTask(ProjectTask task) async {
+  Future<String?> addProjectTask(ProjectTask task) async {
     try {
       await _setUserContext();
       final currentUserEmail = await _getCurrentUserEmail();
@@ -307,8 +323,14 @@ class ProjectManagementService {
       taskData['assigned_by'] = currentUserEmail;
       taskData.remove('id'); // ID'yi kaldır, otomatik oluşturulsun
 
-      await _supabase.from('project_tasks').insert(taskData);
-      return true;
+      final response = await _supabase
+          .from('project_tasks')
+          .insert(taskData)
+          .select('id')
+          .single();
+
+      debugPrint('✅ Yeni görev eklendi - ID: ${response['id']}');
+      return response['id'] as String;
     } catch (e) {
       debugPrint('Görev ekleme hatası: $e');
       throw Exception('Görev eklenemedi: $e');
@@ -405,19 +427,6 @@ class ProjectManagementService {
       debugPrint('Davet gönderme hatası: $e');
       throw Exception('Davet gönderilemedi: $e');
     }
-  }
-
-  // Davet token'ı oluştur
-  String _generateInvitationToken() {
-    const chars =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
-    return String.fromCharCodes(
-      Iterable.generate(
-        32,
-        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
-      ),
-    );
   }
 
   // Daveti kabul et
@@ -521,6 +530,163 @@ class ProjectManagementService {
     } catch (e) {
       debugPrint('Proje istatistikleri getirilirken hata: $e');
       return {};
+    }
+  }
+
+  // Proje davetlerini getir
+  Future<List<Map<String, dynamic>>> getProjectInvitations(
+    String projectId,
+  ) async {
+    try {
+      await _setUserContext();
+
+      final response = await _supabase
+          .from('project_invitations')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', ascending: false);
+
+      return response.map((json) => Map<String, dynamic>.from(json)).toList();
+    } catch (e) {
+      debugPrint('Proje davetleri getirilirken hata: $e');
+      return [];
+    }
+  }
+
+  // Daveti iptal et (sadece pending durumundakiler)
+  Future<bool> cancelInvitation(String invitationId) async {
+    try {
+      await _setUserContext();
+
+      await _supabase
+          .from('project_invitations')
+          .delete()
+          .eq('id', invitationId)
+          .eq('status', 'pending');
+
+      return true;
+    } catch (e) {
+      debugPrint('Davet iptal etme hatası: $e');
+      throw Exception('Davet iptal edilemedi: $e');
+    }
+  }
+
+  // Proje görev bildirimi oluştur
+  Future<void> createProjectTaskNotification({
+    required String userEmail,
+    required String taskTitle,
+    required String projectTitle,
+    required String taskId,
+    required String projectId,
+    required String notificationType, // 'task_assigned' veya 'task_due_soon'
+    String? assignedBy,
+    DateTime? dueDateTime,
+  }) async {
+    try {
+      String title;
+      String message;
+
+      if (notificationType == 'task_assigned') {
+        title = 'Yeni Proje Görevi Atandı';
+        message =
+            '$assignedBy tarafından "$projectTitle" projesinde size "$taskTitle" görevi atandı.';
+      } else if (notificationType == 'task_due_soon') {
+        title = 'Proje Görevi Son Gün';
+        message =
+            '"$projectTitle" projesindeki "$taskTitle" görevinizin son günü!';
+      } else {
+        return;
+      }
+
+      await _supabase.from('notifications').insert({
+        'user_email': userEmail,
+        'title': title,
+        'message': message,
+        'type': notificationType,
+        'related_id': taskId,
+        'action_data': {
+          'project_id': projectId,
+          'project_title': projectTitle,
+          'task_title': taskTitle,
+          'assigned_by': assignedBy,
+          'due_datetime': dueDateTime?.toIso8601String(),
+        },
+      });
+    } catch (e) {
+      debugPrint('Proje görev bildirimi oluşturma hatası: $e');
+    }
+  }
+
+  // Kullanıcının proje görevlerini bildirimler için getir
+  Future<List<ProjectTask>> getUserProjectTasks() async {
+    try {
+      await _setUserContext();
+      final currentUserEmail = await _getCurrentUserEmail();
+      if (currentUserEmail == null) return [];
+
+      final response = await _supabase
+          .from('project_tasks')
+          .select('''
+            *,
+            projects!inner(
+              title
+            )
+          ''')
+          .eq('assigned_to', currentUserEmail)
+          .neq('status', 'done')
+          .order('due_datetime', ascending: true);
+
+      return response.map((json) {
+        final task = ProjectTask.fromJson(json);
+        // Proje başlığını ekle
+        if (json['projects'] != null) {
+          task.projectTitle = json['projects']['title'];
+        }
+        return task;
+      }).toList();
+    } catch (e) {
+      debugPrint('Kullanıcı proje görevleri getirilirken hata: $e');
+      return [];
+    }
+  }
+
+  // Projeyi sil (sadece proje sahibi)
+  Future<bool> deleteProject(String projectId) async {
+    try {
+      await _setUserContext();
+      final currentUserEmail = await _getCurrentUserEmail();
+
+      // Kullanıcının proje sahibi olup olmadığını kontrol et
+      final userRole = await getUserRoleInProject(projectId);
+      if (userRole != 'owner') {
+        throw Exception('Sadece proje sahibi projeyi silebilir');
+      }
+
+      // Proje ile ilgili tüm verileri sil
+      await Future.wait([
+        // Proje görevlerini sil
+        _supabase.from('project_tasks').delete().eq('project_id', projectId),
+        // Proje üyelerini sil
+        _supabase.from('project_members').delete().eq('project_id', projectId),
+        // Proje davetlerini sil
+        _supabase
+            .from('project_invitations')
+            .delete()
+            .eq('project_id', projectId),
+        // Proje bildirimlerini sil
+        _supabase
+            .from('notifications')
+            .delete()
+            .eq('action_data->project_id', projectId),
+      ]);
+
+      // Son olarak projeyi sil
+      await _supabase.from('projects').delete().eq('id', projectId);
+
+      return true;
+    } catch (e) {
+      debugPrint('Proje silme hatası: $e');
+      throw Exception('Proje silinemedi: $e');
     }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
+import 'package:todo_list/data/services/notification_service.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
@@ -18,6 +19,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   String _userName = '';
+  int _unreadNotificationCount = 0;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -30,6 +33,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _loadUserName();
+    _loadNotificationCount();
   }
 
   @override
@@ -49,6 +53,19 @@ class _CustomAppBarState extends State<CustomAppBar>
       }
     } catch (e) {
       debugPrint('Kullanıcı adı yüklenirken hata: $e');
+    }
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final count = await _notificationService.getUnreadNotificationCount();
+      if (mounted) {
+        setState(() {
+          _unreadNotificationCount = count;
+        });
+      }
+    } catch (e) {
+      debugPrint('Bildirim sayısı yüklenirken hata: $e');
     }
   }
 
@@ -174,7 +191,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     title: const Text('Ayarlar'),
                     onTap: () {
                       Navigator.pop(context);
-                      // Ayarlar sayfasına git
+                      Navigator.pushNamed(context, '/settings');
                     },
                   ),
                   ListTile(
@@ -185,7 +202,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     title: const Text('Yardım'),
                     onTap: () {
                       Navigator.pop(context);
-                      // Yardım sayfasına git
+                      Navigator.pushNamed(context, '/help');
                     },
                   ),
                   const Divider(),
@@ -281,41 +298,36 @@ class _CustomAppBarState extends State<CustomAppBar>
                   Positioned(
                     right: 0,
                     top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade500,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 12,
-                        minHeight: 12,
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                    child: _unreadNotificationCount > 0
+                        ? Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade500,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 12,
+                              minHeight: 12,
+                            ),
+                            child: Text(
+                              _unreadNotificationCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ],
               ),
-              onPressed: () {
-                // Bildirimler sayfasına git
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Bildirimler özelliği yakında!'),
-                    backgroundColor: Colors.blue.shade600,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                );
+              onPressed: () async {
+                Navigator.pushNamed(context, '/notifications');
+                // Bildirimler sayfasına gidince sayıyı güncelle
+                await Future.delayed(const Duration(milliseconds: 500));
+                _loadNotificationCount();
               },
             ),
           ),

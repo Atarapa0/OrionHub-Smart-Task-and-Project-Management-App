@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:todo_list/UI/widget/custom_app_bar.dart';
 import 'package:todo_list/data/services/notification_service.dart';
 import 'package:todo_list/data/models/notification.dart';
+import 'package:todo_list/data/services/task_service.dart';
+import 'package:todo_list/data/services/project_services.dart';
+import 'package:todo_list/data/models/task.dart';
+import 'package:todo_list/data/models/project_task.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -14,17 +18,21 @@ class _NotificationsPageState extends State<NotificationsPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final NotificationService _notificationService = NotificationService();
+  late TaskService _taskService;
+  final ProjectService _projectService = ProjectService();
 
-  List<NotificationModel> _allNotifications = [];
-  List<NotificationModel> _unreadNotifications = [];
   List<NotificationModel> _invitations = [];
+  List<NotificationModel> _taskAssignments = []; // Görev atama bildirimleri
+  List<ProjectTask> _projectTasks = [];
+  List<Task> _personalTasks = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadNotifications();
+    _tabController = TabController(length: 5, vsync: this);
+    _taskService = TaskService(context);
+    _loadData();
   }
 
   @override
@@ -33,26 +41,31 @@ class _NotificationsPageState extends State<NotificationsPage>
     super.dispose();
   }
 
-  Future<void> _loadNotifications() async {
+  Future<void> _loadData() async {
     try {
       setState(() => _isLoading = true);
 
-      final notifications = await _notificationService.getUserNotifications();
+      // Önce proje görev bildirimlerini oluştur ve eski davetleri temizle
+      await Future.wait([
+        _notificationService.createProjectTaskNotifications(),
+        _notificationService.cleanupAcceptedInvitations(),
+      ]);
 
-      setState(() {
-        _allNotifications = notifications;
-        _unreadNotifications = notifications.where((n) => !n.isRead).toList();
-        _invitations = notifications
-            .where((n) => n.type == 'project_invitation')
-            .toList();
-        _isLoading = false;
-      });
+      // Paralel olarak tüm verileri yükle
+      final results = await Future.wait([
+        _loadInvitations(),
+        _loadTaskAssignments(), // Görev atama bildirimleri
+        _loadProjectTasks(),
+        _loadPersonalTasks(),
+      ]);
+
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Bildirimler yüklenirken hata: $e'),
+            content: Text('Veriler yüklenirken hata: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -60,10 +73,67 @@ class _NotificationsPageState extends State<NotificationsPage>
     }
   }
 
+  Future<void> _loadInvitations() async {
+    final notifications = await _notificationService.getUserNotifications();
+    _invitations = notifications
+        .where((n) => n.type == 'project_invitation')
+        .toList();
+  }
+
+  Future<void> _loadTaskAssignments() async {
+    final notifications = await _notificationService.getUserNotifications();
+    _taskAssignments = notifications
+        .where((n) => n.type == 'task_assigned')
+        .toList();
+  }
+
+  Future<void> _loadProjectTasks() async {
+    final tasks = await _projectService.getUserProjectTasks();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    _projectTasks = tasks.where((task) {
+      if (task.dueDateTime == null) return false;
+
+      // Sadece bugün ve geçmiş görevleri göster
+      return task.dueDateTime!.isBefore(now.add(const Duration(days: 1))) &&
+          task.status != 'done';
+    }).toList();
+
+    // Tarihe göre sırala (geçmiş olanlar önce)
+    _projectTasks.sort((a, b) {
+      if (a.dueDateTime == null && b.dueDateTime == null) return 0;
+      if (a.dueDateTime == null) return 1;
+      if (b.dueDateTime == null) return -1;
+      return a.dueDateTime!.compareTo(b.dueDateTime!);
+    });
+  }
+
+  Future<void> _loadPersonalTasks() async {
+    final tasks = await _taskService.fetchTasksForCurrentUser();
+    final now = DateTime.now();
+
+    _personalTasks = tasks.where((task) {
+      if (task.dueDateTime == null) return false;
+
+      // Sadece bugün ve geçmiş görevleri göster
+      return task.dueDateTime!.isBefore(now.add(const Duration(days: 1))) &&
+          task.status != 'completed';
+    }).toList();
+
+    // Tarihe göre sırala (geçmiş olanlar önce)
+    _personalTasks.sort((a, b) {
+      if (a.dueDateTime == null && b.dueDateTime == null) return 0;
+      if (a.dueDateTime == null) return 1;
+      if (b.dueDateTime == null) return -1;
+      return a.dueDateTime!.compareTo(b.dueDateTime!);
+    });
+  }
+
   Future<void> _markAsRead(String notificationId) async {
     try {
       await _notificationService.markAsRead(notificationId);
-      await _loadNotifications();
+      await _loadData();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +149,7 @@ class _NotificationsPageState extends State<NotificationsPage>
   Future<void> _markAllAsRead() async {
     try {
       await _notificationService.markAllAsRead();
-      await _loadNotifications();
+      await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -99,24 +169,70 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   Future<void> _respondToInvitation(String invitationId, bool accept) async {
     try {
+      // Loading göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
       await _notificationService.respondToProjectInvitation(
         invitationId,
         accept,
       );
-      await _loadNotifications();
+
+      // Loading'i kapat
+      if (mounted) Navigator.pop(context);
+
+      await _loadData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(accept ? 'Davet kabul edildi' : 'Davet reddedildi'),
+            content: Row(
+              children: [
+                Icon(
+                  accept ? Icons.check_circle : Icons.cancel,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  accept
+                      ? 'Davet kabul edildi! Projeye katıldınız.'
+                      : 'Davet reddedildi',
+                ),
+              ],
+            ),
             backgroundColor: accept ? Colors.green : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
+      // Loading'i kapat
+      if (mounted) Navigator.pop(context);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Hata: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }
@@ -159,7 +275,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                       ),
                     ),
                     const Spacer(),
-                    if (_unreadNotifications.isNotEmpty)
+                    if (_invitations.isNotEmpty)
                       TextButton.icon(
                         onPressed: _markAllAsRead,
                         icon: const Icon(Icons.done_all, color: Colors.white),
@@ -172,7 +288,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${_unreadNotifications.length} okunmamış bildirim',
+                  '${_invitations.length} proje daveti',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 16,
@@ -192,12 +308,21 @@ class _NotificationsPageState extends State<NotificationsPage>
               indicatorColor: Colors.blue.shade600,
               tabs: [
                 Tab(
-                  text: 'Tümü (${_allNotifications.length})',
+                  text:
+                      'Tümü (${_taskAssignments.length + _projectTasks.length + _personalTasks.length})',
                   icon: const Icon(Icons.all_inbox),
                 ),
                 Tab(
-                  text: 'Okunmamış (${_unreadNotifications.length})',
-                  icon: const Icon(Icons.mark_email_unread),
+                  text: 'Görev Atamaları (${_taskAssignments.length})',
+                  icon: const Icon(Icons.assignment_ind),
+                ),
+                Tab(
+                  text: 'Proje Görevleri (${_projectTasks.length})',
+                  icon: const Icon(Icons.folder_shared),
+                ),
+                Tab(
+                  text: 'Kişisel Görevler (${_personalTasks.length})',
+                  icon: const Icon(Icons.assignment),
                 ),
                 Tab(
                   text: 'Davetler (${_invitations.length})',
@@ -214,8 +339,14 @@ class _NotificationsPageState extends State<NotificationsPage>
                 : TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildNotificationsList(_allNotifications),
-                      _buildNotificationsList(_unreadNotifications),
+                      _buildNotificationsList(
+                        _taskAssignments,
+                        _projectTasks,
+                        _personalTasks,
+                      ),
+                      _buildTaskAssignmentsList(_taskAssignments),
+                      _buildProjectTasksList(_projectTasks),
+                      _buildPersonalTasksList(_personalTasks),
                       _buildInvitationsList(_invitations),
                     ],
                   ),
@@ -225,8 +356,14 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  Widget _buildNotificationsList(List<NotificationModel> notifications) {
-    if (notifications.isEmpty) {
+  Widget _buildNotificationsList(
+    List<NotificationModel> taskAssignments,
+    List<ProjectTask> projectTasks,
+    List<Task> personalTasks,
+  ) {
+    if (taskAssignments.isEmpty &&
+        projectTasks.isEmpty &&
+        personalTasks.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -251,13 +388,404 @@ class _NotificationsPageState extends State<NotificationsPage>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadNotifications,
+      onRefresh: _loadData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: notifications.length,
+        itemCount:
+            taskAssignments.length + projectTasks.length + personalTasks.length,
         itemBuilder: (context, index) {
-          return _buildNotificationCard(notifications[index]);
+          if (index < taskAssignments.length) {
+            return _buildTaskAssignmentCard(taskAssignments[index]);
+          } else if (index < taskAssignments.length + projectTasks.length) {
+            return _buildProjectTaskCard(
+              projectTasks[index - taskAssignments.length],
+            );
+          } else {
+            return _buildPersonalTaskCard(
+              personalTasks[index -
+                  taskAssignments.length -
+                  projectTasks.length],
+            );
+          }
         },
+      ),
+    );
+  }
+
+  Widget _buildTaskAssignmentsList(List<NotificationModel> taskAssignments) {
+    if (taskAssignments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.assignment_ind_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Görev atama bildirimi yok',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: taskAssignments.length,
+        itemBuilder: (context, index) {
+          return _buildTaskAssignmentCard(taskAssignments[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildTaskAssignmentCard(NotificationModel notification) {
+    final actionData = notification.actionData ?? {};
+    final projectTitle = actionData['project_title'] ?? 'Bilinmeyen Proje';
+    final taskTitle = actionData['task_title'] ?? notification.title;
+    final assignedBy = actionData['assigned_by'] ?? 'Bilinmeyen';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.assignment_ind,
+                    color: Colors.green.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Yeni Görev Atandı',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        projectTitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!notification.isRead)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade600,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              taskTitle,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              notification.message,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.person, size: 16, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  'Atayan: $assignedBy',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const Spacer(),
+                Text(
+                  _formatDate(notification.createdAt),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+            if (!notification.isRead) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _markAsRead(notification.id),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Okundu İşaretle'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectTasksList(List<ProjectTask> projectTasks) {
+    if (projectTasks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.folder_shared_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Proje görevleri yok',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: projectTasks.length,
+        itemBuilder: (context, index) {
+          return _buildProjectTaskCard(projectTasks[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPersonalTasksList(List<Task> personalTasks) {
+    if (personalTasks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.assignment_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Kişisel görevler yok',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: personalTasks.length,
+        itemBuilder: (context, index) {
+          return _buildPersonalTaskCard(personalTasks[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildProjectTaskCard(ProjectTask task) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.folder_shared,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              task.description ?? 'Açıklama yok',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  task.timeStatus,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const Spacer(),
+                _getProjectTaskTypeChip(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalTaskCard(Task task) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.assignment,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              task.description ?? 'Açıklama yok',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  task.timeStatus,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const Spacer(),
+                _getPersonalTaskTypeChip(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _getProjectTaskTypeChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Proje',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+      ),
+    );
+  }
+
+  Widget _getPersonalTaskTypeChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Kişisel',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.green,
+        ),
       ),
     );
   }
@@ -275,7 +803,7 @@ class _NotificationsPageState extends State<NotificationsPage>
             ),
             const SizedBox(height: 16),
             Text(
-              'Proje daveti yok',
+              'Davet yok',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey.shade600,
@@ -288,7 +816,7 @@ class _NotificationsPageState extends State<NotificationsPage>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadNotifications,
+      onRefresh: _loadData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: invitations.length,
@@ -299,79 +827,8 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  Widget _buildNotificationCard(NotificationModel notification) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: notification.isRead ? 1 : 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _markAsRead(notification.id),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _getNotificationIcon(notification.type),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      notification.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: notification.isRead
-                            ? FontWeight.w500
-                            : FontWeight.bold,
-                        color: notification.isRead
-                            ? Colors.grey.shade700
-                            : Colors.black87,
-                      ),
-                    ),
-                  ),
-                  if (!notification.isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                notification.message,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    notification.timeAgo,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                  const Spacer(),
-                  _getNotificationTypeChip(notification.type),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInvitationCard(NotificationModel notification) {
-    final actionData = notification.actionData;
+  Widget _buildInvitationCard(NotificationModel invitation) {
+    final actionData = invitation.actionData;
     final invitationStatus = actionData?['status'] ?? 'pending';
 
     return Card(
@@ -400,7 +857,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    notification.title,
+                    invitation.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -411,7 +868,7 @@ class _NotificationsPageState extends State<NotificationsPage>
             ),
             const SizedBox(height: 12),
             Text(
-              notification.message,
+              invitation.message,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 12),
@@ -420,121 +877,125 @@ class _NotificationsPageState extends State<NotificationsPage>
                 Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
                 const SizedBox(width: 4),
                 Text(
-                  notification.timeAgo,
+                  invitation.timeAgo,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
                 const Spacer(),
-                if (invitationStatus == 'pending') ...[
-                  TextButton(
-                    onPressed: () =>
-                        _respondToInvitation(notification.relatedId!, false),
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Reddet'),
+                _getInvitationStatusChip(invitationStatus),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Kabul Et / Reddet Butonları (sadece pending durumunda)
+            if (invitationStatus == 'pending') ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          _respondToInvitation(invitation.relatedId!, false),
+                      icon: const Icon(Icons.close, size: 18),
+                      label: const Text('Reddet'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: BorderSide(color: Colors.red.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () =>
-                        _respondToInvitation(notification.relatedId!, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _respondToInvitation(invitation.relatedId!, true),
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Kabul Et'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                    child: const Text('Kabul Et'),
                   ),
-                ] else ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: invitationStatus == 'accepted'
-                          ? Colors.green.shade100
-                          : Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
+                ],
+              ),
+            ] else ...[
+              // Durum mesajı (kabul edilmiş/reddedilmiş)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: invitationStatus == 'accepted'
+                      ? Colors.green.shade50
+                      : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: invitationStatus == 'accepted'
+                        ? Colors.green.shade200
+                        : Colors.red.shade200,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
                       invitationStatus == 'accepted'
-                          ? 'Kabul Edildi'
-                          : 'Reddedildi',
+                          ? Icons.check_circle
+                          : Icons.cancel,
+                      color: invitationStatus == 'accepted'
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      invitationStatus == 'accepted'
+                          ? 'Davet Kabul Edildi'
+                          : 'Davet Reddedildi',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: invitationStatus == 'accepted'
                             ? Colors.green.shade700
                             : Colors.red.shade700,
                       ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _getNotificationIcon(String type) {
-    IconData icon;
+  Widget _getInvitationStatusChip(String status) {
     Color color;
-
-    switch (type) {
-      case 'task_reminder':
-        icon = Icons.schedule;
-        color = Colors.orange;
-        break;
-      case 'task_assigned':
-        icon = Icons.assignment;
-        color = Colors.blue;
-        break;
-      case 'project_invitation':
-        icon = Icons.group_add;
-        color = Colors.green;
-        break;
-      case 'project_added':
-        icon = Icons.folder_shared;
-        color = Colors.purple;
-        break;
-      default:
-        icon = Icons.notifications;
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: color, size: 20),
-    );
-  }
-
-  Widget _getNotificationTypeChip(String type) {
     String text;
-    Color color;
 
-    switch (type) {
-      case 'task_reminder':
-        text = 'Hatırlatma';
-        color = Colors.orange;
-        break;
-      case 'task_assigned':
-        text = 'Görev';
-        color = Colors.blue;
-        break;
-      case 'project_invitation':
-        text = 'Davet';
+    switch (status) {
+      case 'accepted':
         color = Colors.green;
+        text = 'Kabul Edildi';
         break;
-      case 'project_added':
-        text = 'Proje';
-        color = Colors.purple;
+      case 'rejected':
+        color = Colors.red;
+        text = 'Reddedildi';
+        break;
+      case 'expired':
+        color = Colors.grey;
+        text = 'Süresi Doldu';
         break;
       default:
-        text = 'Bildirim';
-        color = Colors.grey;
+        color = Colors.orange;
+        text = 'Bekliyor';
     }
 
     return Container(
@@ -552,5 +1013,24 @@ class _NotificationsPageState extends State<NotificationsPage>
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime dateTime) {
+    try {
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} gün önce';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} saat önce';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} dakika önce';
+      } else {
+        return 'Az önce';
+      }
+    } catch (e) {
+      return 'Bilinmiyor';
+    }
   }
 }

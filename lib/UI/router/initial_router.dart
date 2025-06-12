@@ -3,6 +3,9 @@ import 'package:todo_list/UI/pages/home_page.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
 import 'package:todo_list/UI/pages/project_detail_page.dart';
 import 'package:todo_list/UI/pages/start_page1.dart';
+import 'package:todo_list/UI/pages/notifications_page.dart';
+import 'package:todo_list/UI/pages/settings_page.dart';
+import 'package:todo_list/UI/pages/help_page.dart';
 import 'package:todo_list/data/models/project.dart';
 
 class InitialRouter {
@@ -19,6 +22,12 @@ class InitialRouter {
         return MaterialPageRoute(
           builder: (_) => ProjectDetailPage(project: project),
         );
+      case '/notifications':
+        return MaterialPageRoute(builder: (_) => const NotificationsPage());
+      case '/settings':
+        return MaterialPageRoute(builder: (_) => const SettingsPage());
+      case '/help':
+        return MaterialPageRoute(builder: (_) => const HelpPage());
       default:
         return MaterialPageRoute(
           builder: (_) =>

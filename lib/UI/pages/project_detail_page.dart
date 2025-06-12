@@ -4,6 +4,7 @@ import 'package:todo_list/data/models/project.dart';
 import 'package:todo_list/data/models/project_member.dart';
 import 'package:todo_list/data/models/project_task.dart';
 import 'package:todo_list/data/services/project_management_service.dart';
+import 'package:todo_list/data/services/notification_service.dart';
 import 'package:todo_list/UI/widget/custom_app_bar.dart';
 
 class ProjectDetailPage extends StatefulWidget {
@@ -19,9 +20,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final ProjectManagementService _projectService = ProjectManagementService();
+  final NotificationService _notificationService = NotificationService();
 
   List<ProjectMember> _members = [];
   List<ProjectTask> _tasks = [];
+  List<Map<String, dynamic>> _invitations = [];
   Map<String, dynamic> _stats = {};
   String? _userRole;
   String? _currentUserEmail;
@@ -54,6 +57,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
         _projectService.getProjectTasks(widget.project.id!),
         _projectService.getProjectStats(widget.project.id!),
         _projectService.getUserRoleInProject(widget.project.id!),
+        _projectService.getProjectInvitations(widget.project.id!),
       ]);
 
       if (mounted) {
@@ -62,6 +66,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           _tasks = results[1] as List<ProjectTask>;
           _stats = results[2] as Map<String, dynamic>;
           _userRole = results[3] as String?;
+          _invitations = results[4] as List<Map<String, dynamic>>;
           _isLoading = false;
         });
       }
@@ -85,7 +90,46 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(),
+      appBar: AppBar(
+        title: Text(widget.project.title),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade600, Colors.purple.shade600],
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        actions: [
+          // Sadece proje sahibi için silme butonu
+          if (_userRole == 'owner')
+            PopupMenuButton(
+              icon: const Icon(Icons.more_vert),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_forever, color: Colors.red.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Projeyi Sil',
+                        style: TextStyle(color: Colors.red.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _showDeleteProjectDialog();
+                }
+              },
+            ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -423,67 +467,104 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             ),
             const SizedBox(height: 4),
             // Kategori, atama ve zaman bilgisi
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 if (task.category != null && task.category!.isNotEmpty) ...[
-                  Icon(Icons.category, size: 12, color: Colors.grey.shade500),
-                  const SizedBox(width: 4),
-                  Text(
-                    task.category!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.category,
+                          size: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            task.category!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
                 ],
                 if (task.assignedTo != null) ...[
-                  Icon(
-                    task.assignedTo == currentUserEmail
-                        ? Icons.person
-                        : Icons.person_outline,
-                    size: 12,
-                    color: task.assignedTo == currentUserEmail
-                        ? Colors.blue.shade500
-                        : Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    task.assignedTo == currentUserEmail
-                        ? 'Bana Atandı'
-                        : task.assignedTo!.split('@')[0],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: task.assignedTo == currentUserEmail
-                          ? Colors.blue.shade600
-                          : Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          task.assignedTo == currentUserEmail
+                              ? Icons.person
+                              : Icons.person_outline,
+                          size: 12,
+                          color: task.assignedTo == currentUserEmail
+                              ? Colors.blue.shade500
+                              : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            task.assignedTo == currentUserEmail
+                                ? 'Bana Atandı'
+                                : task.assignedTo!.split('@')[0],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: task.assignedTo == currentUserEmail
+                                  ? Colors.blue.shade600
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
                 ],
                 if (task.dueDateTime != null) ...[
-                  Icon(
-                    Icons.schedule,
-                    size: 12,
-                    color:
-                        task.dueDateTime!.isBefore(DateTime.now()) &&
-                            !task.isCompleted
-                        ? Colors.red.shade500
-                        : Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    task.timeStatus,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color:
-                          task.dueDateTime!.isBefore(DateTime.now()) &&
-                              !task.isCompleted
-                          ? Colors.red.shade600
-                          : Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color:
+                              task.dueDateTime!.isBefore(DateTime.now()) &&
+                                  !task.isCompleted
+                              ? Colors.red.shade500
+                              : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            task.timeStatus,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  task.dueDateTime!.isBefore(DateTime.now()) &&
+                                      !task.isCompleted
+                                  ? Colors.red.shade600
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -590,6 +671,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   Widget _buildMembersTab() {
+    final pendingInvitations = _invitations
+        .where((inv) => inv['status'] == 'pending')
+        .toList();
+
     return Column(
       children: [
         // Üye Ekleme Butonu
@@ -609,14 +694,98 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             ),
           ),
 
-        // Üyeler Listesi
+        // Üyeler ve Davetler Listesi
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _members.length,
-            itemBuilder: (context, index) {
-              return _buildMemberCard(_members[index]);
-            },
+            children: [
+              // Aktif Üyeler Başlığı
+              if (_members.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.people, color: Colors.blue.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Aktif Üyeler (${_members.length})',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Üyeler Listesi
+                ...(_members.map((member) => _buildMemberCard(member))),
+              ],
+
+              // Bekleyen Davetler Başlığı
+              if (pendingInvitations.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule,
+                        color: Colors.orange.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Bekleyen Davetler (${pendingInvitations.length})',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Bekleyen Davetler Listesi
+                ...(pendingInvitations.map(
+                  (invitation) => _buildInvitationCard(invitation),
+                )),
+              ],
+
+              // Boş durum mesajı
+              if (_members.isEmpty && pendingInvitations.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Henüz üye yok',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Projeye üye eklemek için yukarıdaki butonu kullanın',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -693,6 +862,136 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
         ),
       ),
     );
+  }
+
+  Widget _buildInvitationCard(Map<String, dynamic> invitation) {
+    final invitedEmail = invitation['invited_email'] ?? 'Bilinmeyen';
+    final createdAt = DateTime.parse(invitation['created_at']);
+    final timeAgo = _getTimeAgo(createdAt);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.orange.shade100,
+          child: Icon(Icons.schedule, color: Colors.orange.shade700),
+        ),
+        title: Text(invitedEmail),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Davet gönderildi'),
+            Text(
+              timeAgo,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Bekliyor',
+                style: TextStyle(
+                  color: Colors.orange.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (_canManageMembers)
+              PopupMenuButton(
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'cancel',
+                    child: const Row(
+                      children: [
+                        Icon(Icons.cancel, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Daveti İptal Et'),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'cancel') {
+                    _cancelInvitation(invitation['id']);
+                  }
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} gün önce';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} saat önce';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} dakika önce';
+    } else {
+      return 'Az önce';
+    }
+  }
+
+  Future<void> _cancelInvitation(String invitationId) async {
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Daveti İptal Et'),
+          content: const Text(
+            'Bu daveti iptal etmek istediğinizden emin misiniz?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('İptal Et'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await _projectService.cancelInvitation(invitationId);
+        await _loadProjectData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Davet iptal edildi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Davet iptal edilirken hata: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatsTab() {
@@ -1180,9 +1479,44 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                   );
 
                                   try {
-                                    await _projectService.addProjectTask(task);
+                                    final newTaskId = await _projectService
+                                        .addProjectTask(task);
                                     if (!mounted) return;
                                     await _loadProjectData();
+
+                                    // Eğer birine atandıysa bildirim oluştur
+                                    if (assignedTo != null &&
+                                        newTaskId != null) {
+                                      // Atayan kişinin adını al
+                                      final assignerMember = _members
+                                          .firstWhere(
+                                            (m) =>
+                                                m.userEmail ==
+                                                _currentUserEmail,
+                                            orElse: () => ProjectMember(
+                                              projectId: widget.project.id!,
+                                              userEmail:
+                                                  _currentUserEmail ?? '',
+                                              userName: 'Bilinmeyen',
+                                              role: 'owner',
+                                            ),
+                                          );
+
+                                      debugPrint(
+                                        '🔔 Yeni görev için bildirim oluşturuluyor...',
+                                      );
+                                      await _notificationService
+                                          .createTaskAssignmentNotification(
+                                            assignedToEmail: assignedTo!,
+                                            taskTitle: task.title,
+                                            projectTitle: widget.project.title,
+                                            taskId: newTaskId,
+                                            projectId: widget.project.id!,
+                                            assignedByName:
+                                                assignerMember.userName,
+                                          );
+                                    }
+
                                     if (context.mounted) {
                                       Navigator.of(context).pop();
                                     }
@@ -1207,6 +1541,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                       );
                                     }
                                   } catch (e) {
+                                    debugPrint('❌ Görev ekleme hatası: $e');
                                     if (mounted) {
                                       ScaffoldMessenger.of(
                                         context,
@@ -1455,6 +1790,35 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
                 try {
                   await _projectService.assignTask(task.id!, selectedMember);
+
+                  // Eğer birine atandıysa bildirim oluştur
+                  if (selectedMember != null &&
+                      selectedMember != task.assignedTo &&
+                      task.id != null) {
+                    // Atayan kişinin adını al
+                    final assignerMember = _members.firstWhere(
+                      (m) => m.userEmail == _currentUserEmail,
+                      orElse: () => ProjectMember(
+                        projectId: widget.project.id!,
+                        userEmail: _currentUserEmail ?? '',
+                        userName: 'Bilinmeyen',
+                        role: 'owner',
+                      ),
+                    );
+
+                    debugPrint(
+                      '🔔 Mevcut görev için bildirim oluşturuluyor...',
+                    );
+                    await _notificationService.createTaskAssignmentNotification(
+                      assignedToEmail: selectedMember!,
+                      taskTitle: task.title,
+                      projectTitle: widget.project.title,
+                      taskId: task.id!,
+                      projectId: widget.project.id!,
+                      assignedByName: assignerMember.userName,
+                    );
+                  }
+
                   if (mounted) {
                     navigator.pop();
                     await _loadProjectData();
@@ -1673,6 +2037,143 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               content: Text('Hata: $e'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteProjectDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red.shade600),
+            const SizedBox(width: 8),
+            const Text('Projeyi Sil'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${widget.project.title}" projesini silmek istediğinizden emin misiniz?',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber,
+                        color: Colors.red.shade600,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Bu işlem geri alınamaz!',
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• Tüm proje görevleri silinecek\n• Tüm proje üyeleri çıkarılacak\n• Tüm proje verileri kaybolacak',
+                    style: TextStyle(color: Colors.red.shade600, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Projeyi Sil'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      // Loading göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await _projectService.deleteProject(widget.project.id!);
+
+        if (mounted) {
+          // Loading'i kapat
+          Navigator.pop(context);
+
+          // Proje listesine geri dön
+          Navigator.pop(context);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('"${widget.project.title}" projesi silindi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          // Loading'i kapat
+          Navigator.pop(context);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Proje silinemedi: $e')),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }
