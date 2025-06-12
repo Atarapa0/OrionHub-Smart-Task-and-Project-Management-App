@@ -249,12 +249,17 @@ class _CustomAppBarState extends State<CustomAppBar>
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.task_alt, color: Colors.white, size: 24),
+              child: Image.asset(
+                'assets/OrionHub_appbar_logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(width: 12),
             Column(
@@ -271,7 +276,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 Text(
                   'Görev Yöneticisi',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 12,
                   ),
                 ),

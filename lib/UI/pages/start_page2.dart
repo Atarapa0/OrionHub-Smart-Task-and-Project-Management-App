@@ -25,7 +25,7 @@ class _StartPageState extends State<StartPage2> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'I want to organize your task',
+                      'Takım Halinde Proje Yönetimi',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -34,11 +34,10 @@ class _StartPageState extends State<StartPage2> {
                     ),
                     SizedBox(height: 10),
                     Text(
-                      'Lorem ipsum dolor sit amet consectetur. Quam risus sem amet. Condimentum magna vitae mauris sed integer lacus nec arcu. Gravida s',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
+                      'Ekibinizle birlikte projeler oluşturun ve yönetin. '
+                      'Üye ekleyin, görevleri atayın, ilerlemeyi takip edin. '
+                      'Proje davetleri gönderin, rolleri yönetin ve takım halinde başarıya ulaşın.',
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -62,17 +61,19 @@ class _StartPageState extends State<StartPage2> {
                         child: Container(
                           margin: const EdgeInsets.only(top: 120),
                           child: Container(
-                            width: 200,  // Resmin genişliğini ayarlayın
+                            width: 200, // Resmin genişliğini ayarlayın
                             height: 200, // Resmin yüksekliğini ayarlayın
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(50), // Köşeleri daha yuvarlak yapmak için değeri artırdık
+                              borderRadius: BorderRadius.circular(
+                                50,
+                              ), // Köşeleri daha yuvarlak yapmak için değeri artırdık
                               image: DecorationImage(
                                 image: AssetImage('assets/image1.png'),
                                 fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                        )
+                        ),
                       ),
                     ),
                   ],
@@ -94,15 +95,18 @@ class _StartPageState extends State<StartPage2> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent, // Butonun arka plan rengi
-                          shadowColor: Colors.transparent, // Gölgeyi kaldırmak için
+                          backgroundColor:
+                              Colors.transparent, // Butonun arka plan rengi
+                          shadowColor:
+                              Colors.transparent, // Gölgeyi kaldırmak için
                         ),
                         child: const Text(
-                          'Next',
+                          'Başlayalım',
                           style: TextStyle(
                             fontSize: 25,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87, // Buton üzerindeki metin rengi
+                            color:
+                                Colors.black87, // Buton üzerindeki metin rengi
                           ),
                         ),
                       ),

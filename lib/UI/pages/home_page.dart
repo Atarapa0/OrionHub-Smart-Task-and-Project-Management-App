@@ -493,8 +493,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               priority = value;
                             });
                           }
-                        },
-                      ),
+                },
+              ),
                       const SizedBox(height: 16),
 
                       // Kategori
@@ -636,7 +636,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               child: const Text(
                                 'İptal',
                                 style: TextStyle(fontSize: 16),
-                              ),
+            ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -673,7 +673,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     _refreshTasks();
                                     if (context.mounted) {
                                       Navigator.of(context).pop();
-                                    }
+                }
 
                                     // Başarı mesajı
                                     if (mounted) {
@@ -732,8 +732,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+            ),
+          ],
                       ),
                     ],
                   ),
@@ -1269,7 +1269,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         color: Colors.blue.shade100,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blue.shade300),
-                      ),
+            ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

@@ -60,7 +60,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       ]);
 
       if (mounted) {
-        setState(() {
+      setState(() {
           _members = results[0] as List<ProjectMember>;
           _tasks = results[1] as List<ProjectTask>;
           _stats = results[2] as Map<String, dynamic>;
@@ -948,25 +948,25 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   Future<void> _cancelInvitation(String invitationId) async {
     try {
       final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
+      context: context,
+      builder: (context) => AlertDialog(
           title: const Text('Daveti İptal Et'),
           content: const Text(
             'Bu daveti iptal etmek istediğinizden emin misiniz?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
               child: const Text('Vazgeç'),
-            ),
+          ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, true),
               child: const Text('İptal Et'),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
 
       if (confirmed == true) {
         await _projectService.cancelInvitation(invitationId);
@@ -1180,8 +1180,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                 ),
                 child: SingleChildScrollView(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+          mainAxisSize: MainAxisSize.min,
+          children: [
                       Row(
                         children: [
                           Container(
@@ -1210,7 +1210,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       const SizedBox(height: 24),
 
                       // Başlık
-                      TextField(
+            TextField(
                         decoration: InputDecoration(
                           labelText: 'Görev Başlığı *',
                           prefixIcon: const Icon(Icons.title),
@@ -1225,7 +1225,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       const SizedBox(height: 16),
 
                       // Açıklama
-                      TextField(
+            TextField(
                         decoration: InputDecoration(
                           labelText: 'Açıklama (İsteğe bağlı)',
                           prefixIcon: const Icon(Icons.description),
@@ -1234,14 +1234,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           ),
                           filled: true,
                           fillColor: Colors.white,
-                        ),
-                        maxLines: 3,
+              ),
+              maxLines: 3,
                         onChanged: (value) => description = value,
-                      ),
+            ),
                       const SizedBox(height: 16),
 
                       // Öncelik
-                      DropdownButtonFormField<String>(
+            DropdownButtonFormField<String>(
                         value: priority,
                         decoration: InputDecoration(
                           labelText: 'Öncelik',
@@ -1368,10 +1368,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                       selectedDate = null;
                                       selectedTime = null;
                                     });
-                                  },
-                                ),
-                            ],
-                          ),
+              },
+            ),
+          ],
+        ),
                         ),
                       ),
 
@@ -1420,9 +1420,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                         selectedTime = null;
                                       });
                                     },
-                                  ),
-                              ],
-                            ),
+          ),
+        ],
+      ),
                           ),
                         ),
                       ],
@@ -1724,7 +1724,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                   );
                                 }
                               }
-                            } catch (e) {
+    } catch (e) {
                               if (mounted) {
                                 scaffoldMessenger.showSnackBar(
                                   SnackBar(
@@ -1831,7 +1831,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       );
                     }
                   }
-                } catch (e) {
+    } catch (e) {
                   if (mounted) {
                     scaffoldMessenger.showSnackBar(
                       SnackBar(
@@ -1913,9 +1913,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               child: const Text('Güncelle'),
             ),
           ],
-        ),
-      ),
-    );
+                    ),
+                  ),
+                );
   }
 
   Future<void> _updateTaskStatus(ProjectTask task) async {
@@ -2008,9 +2008,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Çıkar'),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
     );
 
     if (confirmed == true && mounted) {
@@ -2045,7 +2045,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
   Future<void> _showDeleteProjectDialog() async {
     final confirmed = await showDialog<bool>(
-      context: context,
+              context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
@@ -2055,9 +2055,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           ],
         ),
         content: Column(
-          mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+                children: [
             Text(
               '"${widget.project.title}" projesini silmek istediğinizden emin misiniz?',
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -2113,10 +2113,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               foregroundColor: Colors.white,
             ),
             child: const Text('Projeyi Sil'),
-          ),
-        ],
-      ),
-    );
+                  ),
+                ],
+              ),
+            );
 
     if (confirmed == true && mounted) {
       // Loading göster
@@ -2149,9 +2149,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+        ),
+      ),
+    );
         }
       } catch (e) {
         if (mounted) {

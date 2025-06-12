@@ -27,7 +27,7 @@ class _StartPageState extends State<StartPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Organize your task',
+                        'Günlük Görevlerinizi Organize Edin',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -36,13 +36,10 @@ class _StartPageState extends State<StartPage> {
                       ),
                       SizedBox(height: 10),
                       Text(
-                        'Lorem ipsum dolor sit amet consectetur. Quam risus sem '
-                        'amet. Condimentum magna vitae mauris sed integer lacus '
-                        'nec arcu. Gravida s',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
+                        'OrionHub ile kişisel görevlerinizi kolayca yönetin. '
+                        'Günlük yapılacaklar listenizi oluşturun, öncelik seviyesi belirleyin, '
+                        'tarihleri ayarlayın ve görevlerinizi zamanında tamamlayın.',
+                        style: TextStyle(fontSize: 16, color: Colors.white70),
                       ),
                     ],
                   ),
@@ -56,28 +53,30 @@ class _StartPageState extends State<StartPage> {
                         right: 0,
                         height: MediaQuery.of(context).size.height * 0.6,
                         child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(30),
-                                topRight: Radius.circular(30),
-                              ),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(30),
+                              topRight: Radius.circular(30),
                             ),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 120),
                             child: Container(
-                              margin: const EdgeInsets.only(top: 120),
-                              child: Container(
-                                width: 200, // Resmin genişliğini ayarlayın
-                                height: 200, // Resmin yüksekliğini ayarlayın
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                      50), // Köşeleri daha yuvarlak yapmak için değeri artırdık
-                                  image: DecorationImage(
-                                    image: AssetImage('assets/image1.png'),
-                                    fit: BoxFit.cover,
-                                  ),
+                              width: 200, // Resmin genişliğini ayarlayın
+                              height: 200, // Resmin yüksekliğini ayarlayın
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  50,
+                                ), // Köşeleri daha yuvarlak yapmak için değeri artırdık
+                                image: DecorationImage(
+                                  image: AssetImage('assets/image1.png'),
+                                  fit: BoxFit.cover,
                                 ),
                               ),
-                            )),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -104,7 +103,7 @@ class _StartPageState extends State<StartPage> {
                                 Colors.transparent, // Gölgeyi kaldırmak için
                           ),
                           child: const Text(
-                            'Next',
+                            'Devam Et',
                             style: TextStyle(
                               fontSize: 25,
                               fontWeight: FontWeight.bold,
