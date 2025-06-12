@@ -5,7 +5,6 @@ import 'package:todo_list/data/models/project_member.dart';
 import 'package:todo_list/data/models/project_task.dart';
 import 'package:todo_list/data/services/project_management_service.dart';
 import 'package:todo_list/data/services/notification_service.dart';
-import 'package:todo_list/UI/widget/custom_app_bar.dart';
 
 class ProjectDetailPage extends StatefulWidget {
   final Project project;

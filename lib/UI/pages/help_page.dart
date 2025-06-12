@@ -59,7 +59,7 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'TaskNest uygulamasını nasıl kullanacağınızı öğrenin',
+                  'OrionHub uygulamasını nasıl kullanacağınızı öğrenin',
                   style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
               ],
@@ -108,14 +108,14 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionCard(
-            title: 'TaskNest\'e Hoş Geldiniz! 🎉',
+            title: 'OrionHub\'e Hoş Geldiniz! 🎉',
             icon: Icons.celebration,
             color: Colors.purple,
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'TaskNest, kişisel görevlerinizi ve takım projelerinizi yönetmenize yardımcı olan kapsamlı bir görev yönetim uygulamasıdır.',
+                  'OrionHub, kişisel görevlerinizi ve takım projelerinizi yönetmenize yardımcı olan kapsamlı bir görev yönetim uygulamasıdır.',
                   style: TextStyle(fontSize: 16, height: 1.5),
                 ),
                 const SizedBox(height: 16),
@@ -409,7 +409,7 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 ),
                 _buildFAQItem(
                   'Uygulama ücretsiz mi?',
-                  'Evet, TaskNest tamamen ücretsiz bir uygulamadır.',
+                  'Evet, OrionHub tamamen ücretsiz bir uygulamadır.',
                 ),
                 _buildFAQItem(
                   'Teknik destek nasıl alabilirim?',

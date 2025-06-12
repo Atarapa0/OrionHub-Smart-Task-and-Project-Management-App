@@ -654,7 +654,6 @@ class ProjectManagementService {
   Future<bool> deleteProject(String projectId) async {
     try {
       await _setUserContext();
-      final currentUserEmail = await _getCurrentUserEmail();
 
       // Kullanıcının proje sahibi olup olmadığını kontrol et
       final userRole = await getUserRoleInProject(projectId);

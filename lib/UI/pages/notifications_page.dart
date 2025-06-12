@@ -30,7 +30,7 @@ class _NotificationsPageState extends State<NotificationsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _taskService = TaskService(context);
     _loadData();
   }
@@ -52,7 +52,7 @@ class _NotificationsPageState extends State<NotificationsPage>
       ]);
 
       // Paralel olarak tüm verileri yükle
-      final results = await Future.wait([
+      await Future.wait([
         _loadInvitations(),
         _loadTaskAssignments(), // Görev atama bildirimleri
         _loadProjectTasks(),
@@ -90,7 +90,6 @@ class _NotificationsPageState extends State<NotificationsPage>
   Future<void> _loadProjectTasks() async {
     final tasks = await _projectService.getUserProjectTasks();
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
 
     _projectTasks = tasks.where((task) {
       if (task.dueDateTime == null) return false;
@@ -313,11 +312,8 @@ class _NotificationsPageState extends State<NotificationsPage>
                   icon: const Icon(Icons.all_inbox),
                 ),
                 Tab(
-                  text: 'Görev Atamaları (${_taskAssignments.length})',
-                  icon: const Icon(Icons.assignment_ind),
-                ),
-                Tab(
-                  text: 'Proje Görevleri (${_projectTasks.length})',
+                  text:
+                      'Proje Bildirimleri (${_taskAssignments.length + _projectTasks.length})',
                   icon: const Icon(Icons.folder_shared),
                 ),
                 Tab(
@@ -344,8 +340,10 @@ class _NotificationsPageState extends State<NotificationsPage>
                         _projectTasks,
                         _personalTasks,
                       ),
-                      _buildTaskAssignmentsList(_taskAssignments),
-                      _buildProjectTasksList(_projectTasks),
+                      _buildProjectNotificationsList(
+                        _taskAssignments,
+                        _projectTasks,
+                      ),
                       _buildPersonalTasksList(_personalTasks),
                       _buildInvitationsList(_invitations),
                     ],
@@ -407,43 +405,6 @@ class _NotificationsPageState extends State<NotificationsPage>
                   projectTasks.length],
             );
           }
-        },
-      ),
-    );
-  }
-
-  Widget _buildTaskAssignmentsList(List<NotificationModel> taskAssignments) {
-    if (taskAssignments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_ind_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Görev atama bildirimi yok',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: taskAssignments.length,
-        itemBuilder: (context, index) {
-          return _buildTaskAssignmentCard(taskAssignments[index]);
         },
       ),
     );
@@ -560,43 +521,6 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  Widget _buildProjectTasksList(List<ProjectTask> projectTasks) {
-    if (projectTasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_shared_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Proje görevleri yok',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: projectTasks.length,
-        itemBuilder: (context, index) {
-          return _buildProjectTaskCard(projectTasks[index]);
-        },
-      ),
-    );
-  }
-
   Widget _buildPersonalTasksList(List<Task> personalTasks) {
     if (personalTasks.isEmpty) {
       return Center(
@@ -634,158 +558,48 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  Widget _buildProjectTaskCard(ProjectTask task) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+  Widget _buildProjectNotificationsList(
+    List<NotificationModel> taskAssignments,
+    List<ProjectTask> projectTasks,
+  ) {
+    if (taskAssignments.isEmpty && projectTasks.isEmpty) {
+      return Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.folder_shared,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+            Icon(
+              Icons.folder_shared_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
-              task.description ?? 'Açıklama yok',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text(
-                  task.timeStatus,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                ),
-                const Spacer(),
-                _getProjectTaskTypeChip(),
-              ],
+              'Proje bildirimi yok',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildPersonalTaskCard(Task task) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.assignment,
-                    color: Colors.blue.shade600,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              task.description ?? 'Açıklama yok',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text(
-                  task.timeStatus,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                ),
-                const Spacer(),
-                _getPersonalTaskTypeChip(),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _getProjectTaskTypeChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Text(
-        'Proje',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: Colors.blue,
-        ),
-      ),
-    );
-  }
-
-  Widget _getPersonalTaskTypeChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Text(
-        'Kişisel',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: Colors.green,
-        ),
+        itemCount: taskAssignments.length + projectTasks.length,
+        itemBuilder: (context, index) {
+          if (index < taskAssignments.length) {
+            return _buildTaskAssignmentCard(taskAssignments[index]);
+          } else {
+            return _buildProjectTaskCard(
+              projectTasks[index - taskAssignments.length],
+            );
+          }
+        },
       ),
     );
   }
@@ -1010,6 +824,162 @@ class _NotificationsPageState extends State<NotificationsPage>
           fontSize: 10,
           fontWeight: FontWeight.bold,
           color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectTaskCard(ProjectTask task) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.folder_shared,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              task.description ?? 'Açıklama yok',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  task.timeStatus,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const Spacer(),
+                _getProjectTaskTypeChip(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalTaskCard(Task task) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.assignment,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              task.description ?? 'Açıklama yok',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  task.timeStatus,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const Spacer(),
+                _getPersonalTaskTypeChip(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _getProjectTaskTypeChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Proje',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+      ),
+    );
+  }
+
+  Widget _getPersonalTaskTypeChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Kişisel',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.green,
         ),
       ),
     );

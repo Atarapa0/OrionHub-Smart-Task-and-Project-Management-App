@@ -261,7 +261,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'TaskNest',
+                  'OrionHub',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,

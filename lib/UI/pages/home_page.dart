@@ -382,7 +382,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
+        return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -400,8 +400,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 child: SingleChildScrollView(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+            mainAxisSize: MainAxisSize.min,
+            children: [
                       Row(
                         children: [
                           Container(
@@ -445,7 +445,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
 
                       // Açıklama
-                      TextField(
+              TextField(
                         decoration: InputDecoration(
                           labelText: 'Açıklama (İsteğe bağlı)',
                           prefixIcon: const Icon(Icons.description),
@@ -487,7 +487,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             child: Text('Acil'),
                           ),
                         ],
-                        onChanged: (value) {
+                onChanged: (value) {
                           if (value != null) {
                             setDialogState(() {
                               priority = value;
@@ -498,7 +498,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
 
                       // Kategori
-                      TextField(
+              TextField(
                         decoration: InputDecoration(
                           labelText: 'Kategori (İsteğe bağlı)',
                           prefixIcon: const Icon(Icons.category),
@@ -559,10 +559,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       selectedDate = null;
                                       selectedTime = null;
                                     });
-                                  },
-                                ),
-                            ],
-                          ),
+                },
+              ),
+            ],
+          ),
                         ),
                       ),
 
@@ -606,7 +606,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 if (selectedTime != null)
                                   IconButton(
                                     icon: const Icon(Icons.clear, size: 20),
-                                    onPressed: () {
+              onPressed: () {
                                       setDialogState(() {
                                         selectedTime = null;
                                       });
@@ -642,9 +642,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () async {
-                                if (title.trim().isNotEmpty) {
-                                  final context = dialogContext;
+              onPressed: () async {
+                if (title.trim().isNotEmpty) {
+                  final context = dialogContext;
 
                                   // Tarih ve saat bilgilerini hazırla
                                   String? dueTimeString;
@@ -668,8 +668,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   );
 
                                   try {
-                                    await _taskService.insertTask(newTask);
-                                    if (!mounted) return;
+                  await _taskService.insertTask(newTask);
+                  if (!mounted) return;
                                     _refreshTasks();
                                     if (context.mounted) {
                                       Navigator.of(context).pop();
@@ -777,7 +777,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       );
       debugPrint('Task başlığı: ${task.title}');
 
-      await _taskService.deleteTask(task.id!);
+    await _taskService.deleteTask(task.id!);
 
       debugPrint('Görev başarıyla silindi, liste yenileniyor...');
       _refreshTasks();
@@ -1154,10 +1154,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
                                   _hasActiveFilters()
                                       ? 'Filtrelenmiş Görevler'
                                       : 'Bugünkü İlerlemeniz',
@@ -1179,7 +1179,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Filtre uygulandı',
-                                    style: TextStyle(
+              style: TextStyle(
                                       color: Colors.white.withOpacity(0.8),
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic,
@@ -1231,7 +1231,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -1249,10 +1249,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 children: [
                   Icon(Icons.task_alt, color: Colors.grey.shade700, size: 24),
                   const SizedBox(width: 8),
-                  Text(
+            Text(
                     'Görevleriniz',
-                    style: TextStyle(
-                      fontSize: 20,
+              style: TextStyle(
+                fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade800,
                     ),
@@ -1367,14 +1367,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ],
 
               // Görevler Listesi
-              Expanded(
-                child: FutureBuilder<List<Task>>(
+            Expanded(
+              child: FutureBuilder<List<Task>>(
                   key: ValueKey('tasks_${_futureBuilderKey.toString()}'),
                   future: _tasksFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1402,7 +1402,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ],
                         ),
                       );
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1430,21 +1430,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ],
                         ),
                       );
-                    } else {
-                      final tasks = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
+                  } else {
+                    final tasks = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) {
                           return _buildTaskItem(tasks[index], index);
-                        },
-                      );
-                    }
-                  },
-                ),
+                      },
+                    );
+                  }
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddTaskDialog,
@@ -1457,6 +1457,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
       bottomNavigationBar: const BottomNavigationController(initialIndex: 0),
-    );
+     );
   }
 }
