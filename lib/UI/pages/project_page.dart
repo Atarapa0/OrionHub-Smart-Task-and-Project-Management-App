@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/data/models/project.dart';
+import 'package:todo_list/data/services/project_management_service.dart';
 import 'package:todo_list/UI/widget/bottom_navigation_controller.dart';
 import 'package:todo_list/UI/widget/custom_app_bar.dart';
 import 'package:todo_list/data/services/project_services.dart';
+import 'package:todo_list/UI/pages/project_detail_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectPage extends StatefulWidget {
   const ProjectPage({super.key});
@@ -13,33 +15,37 @@ class ProjectPage extends StatefulWidget {
 }
 
 class _ProjectPageState extends State<ProjectPage> {
-  late Future<List<Project>> _projectsFuture;
-  final _projectService = ProjectService();
+  final ProjectService _projectService = ProjectService();
+  final ProjectManagementService _managementService =
+      ProjectManagementService();
+  List<Map<String, dynamic>> _userProjects = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _projectsFuture = _loadProjects();
+    _loadUserProjects();
   }
 
-  Future<List<Project>> _loadProjects() async {
+  Future<void> _loadUserProjects() async {
+    setState(() => _isLoading = true);
+
     try {
-      return await _projectService.fetchProjects();
+      final projects = await _managementService.getUserProjects();
+      if (mounted) {
+        setState(() {
+          _userProjects = projects;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Projeler yüklenirken hata oluştu: $e')),
+          SnackBar(content: Text('Projeler yüklenirken hata: $e')),
         );
       }
-      return [];
     }
-  }
-
-  Future<void> _refreshProjects() async {
-    if (!mounted) return;
-    setState(() {
-      _projectsFuture = _loadProjects();
-    });
   }
 
   Future<void> _showAddProjectDialog() async {
@@ -48,84 +54,190 @@ class _ProjectPageState extends State<ProjectPage> {
 
     if (!mounted) return;
 
-    final dialogContext = context;
-    final result = await showDialog(
-      context: dialogContext,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Yeni Proje'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Proje Adı',
-                hintText: 'Projenizin adını girin',
-              ),
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade50, Colors.purple.shade50],
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Açıklama',
-                hintText: 'Proje açıklamasını girin',
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.folder_special,
+                      color: Colors.blue.shade700,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Yeni Proje Oluştur',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 3,
-            ),
-          ],
+              const SizedBox(height: 24),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Proje Adı',
+                  prefixIcon: const Icon(Icons.title),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Proje Açıklaması',
+                  prefixIcon: const Icon(Icons.description),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'İptal',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Oluştur',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ekle'),
-          ),
-        ],
       ),
     );
 
-    if (!mounted || result != true) return;
+    if (result != true || !mounted) return;
 
     if (titleController.text.isEmpty) {
-      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Lütfen proje adını girin')));
       return;
     }
 
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Oturum açmanız gerekiyor')));
-      return;
-    }
-
     try {
+      // Mevcut kullanıcının email'ini al
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('loggedInUserEmail');
+
+      if (userEmail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kullanıcı bilgisi bulunamadı')),
+        );
+        return;
+      }
+
       await _projectService.addProject(
         Project(
           title: titleController.text,
-          description: descriptionController.text,
-          createdBy: currentUser.id,
+          description: descriptionController.text.isEmpty
+              ? null
+              : descriptionController.text,
+          createdBy: userEmail,
           createdAt: DateTime.now().toUtc(),
         ),
       );
 
       if (!mounted) return;
-      _refreshProjects();
+      _loadUserProjects();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proje başarıyla oluşturuldu')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Proje başarıyla oluşturuldu'),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Proje oluşturulurken hata: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Proje oluşturulurken hata: $e')),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     } finally {
       titleController.dispose();
       descriptionController.dispose();
@@ -135,77 +247,322 @@ class _ProjectPageState extends State<ProjectPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(),
-      body: FutureBuilder<List<Project>>(
-        future: _projectsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
+      backgroundColor: Colors.grey.shade50,
+      appBar: const CustomAppBar(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Bir hata oluştu'),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _refreshProjects,
-                    child: const Text('Tekrar Dene'),
+                  // Başlık ve İstatistikler
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.green.shade400, Colors.blue.shade400],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.folder_special,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Projelerim',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_userProjects.length} aktif proje',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_userProjects.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Henüz proje yok.'),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _showAddProjectDialog,
-                    child: const Text('Proje Ekle'),
-                  ),
-                ],
-              ),
-            );
-          }
 
-          final projects = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: _refreshProjects,
-            child: ListView.builder(
-              itemCount: projects.length,
-              itemBuilder: (context, index) {
-                final project = projects[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
+                  // Projeler Başlığı
+                  Row(
+                    children: [
+                      Icon(Icons.folder, color: Colors.grey.shade700, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Projeleriniz',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Projeler Listesi
+                  Expanded(
+                    child: _userProjects.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.folder_outlined,
+                                  size: 64,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Henüz proje yok',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'İlk projenizi oluşturmak için + butonuna tıklayın',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadUserProjects,
+                            child: ListView.builder(
+                              itemCount: _userProjects.length,
+                              itemBuilder: (context, index) {
+                                final projectData = _userProjects[index];
+                                final project = projectData['project'];
+                                final role = projectData['role'];
+
+                                return _buildProjectCard(project, role);
+                              },
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddProjectDialog,
+        backgroundColor: Colors.green.shade600,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text(
+          'Yeni Proje',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      bottomNavigationBar: const BottomNavigationController(initialIndex: 1),
+    );
+  }
+
+  Widget _buildProjectCard(Map<String, dynamic> project, String role) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade400, Colors.purple.shade400],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.folder, color: Colors.white, size: 24),
+        ),
+        title: Text(
+          project['title'] ?? 'Proje Adı',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (project['description'] != null &&
+                project['description'].isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  project['description'],
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  child: ListTile(
-                    title: Text(project.title),
-                    subtitle: Text(project.description ?? ''),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/project-detail',
-                        arguments: project,
-                      );
-                    },
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(role),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
+                  child: Text(
+                    _getRoleText(role),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDate(project['created_at']),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey,
+        ),
+        onTap: () {
+          // Proje detay sayfasına git
+          final projectModel = Project(
+            id: project['id'],
+            title: project['title'],
+            description: project['description'],
+            createdBy: '', // Bu bilgi gerekli değil detay sayfasında
+            createdAt: DateTime.parse(project['created_at']),
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProjectDetailPage(project: projectModel),
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddProjectDialog,
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: const BottomNavigationController(initialIndex: 1),
     );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role) {
+      case 'owner':
+        return Colors.purple;
+      case 'admin':
+        return Colors.blue;
+      case 'member':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getRoleText(String role) {
+    switch (role) {
+      case 'owner':
+        return 'SAHİP';
+      case 'admin':
+        return 'YÖNETİCİ';
+      case 'member':
+        return 'ÜYE';
+      default:
+        return 'ÜYE';
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} gün önce';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} saat önce';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} dakika önce';
+      } else {
+        return 'Az önce';
+      }
+    } catch (e) {
+      return 'Bilinmiyor';
+    }
   }
 }
