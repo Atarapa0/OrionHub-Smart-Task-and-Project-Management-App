@@ -326,21 +326,44 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     // Proje sahibi tüm görevleri yönetebilir (atama, silme)
     final canManageTask = _userRole == 'owner';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      decoration: BoxDecoration(
+        color: task.isCompleted ? Colors.green.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: task.isCompleted
+              ? Colors.green.shade200
+              : Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: GestureDetector(
           onTap: canCompleteTask ? () => _updateTaskStatus(task) : null,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: 24,
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: task.isCompleted ? Colors.green : Colors.transparent,
+              color: task.isCompleted
+                  ? Colors.green.shade500
+                  : Colors.transparent,
               border: Border.all(
                 color: task.isCompleted
-                    ? Colors.green
-                    : (canCompleteTask ? Colors.grey : Colors.grey.shade300),
+                    ? Colors.green.shade500
+                    : (canCompleteTask
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade300),
                 width: 2,
               ),
             ),
@@ -355,27 +378,29 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                         )),
           ),
         ),
-        title: Text(
-          task.title,
-          style: TextStyle(
-            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            fontWeight: FontWeight.w600,
-            color: canCompleteTask ? null : Colors.grey.shade600,
-          ),
-        ),
-        subtitle: Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (task.description != null)
-              Text(
-                task.description!,
-                style: TextStyle(
-                  color: canCompleteTask ? null : Colors.grey.shade500,
-                ),
-              ),
-            const SizedBox(height: 4),
             Row(
               children: [
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: task.isCompleted
+                          ? Colors.grey.shade600
+                          : (canCompleteTask
+                                ? Colors.black87
+                                : Colors.grey.shade600),
+                      decoration: task.isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                ),
+                // Öncelik göstergesi
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -394,90 +419,139 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (task.assignedTo != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: task.assignedTo == currentUserEmail
-                          ? Colors.blue.shade100
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (task.assignedTo == currentUserEmail)
-                          Icon(
-                            Icons.person,
-                            size: 12,
-                            color: Colors.blue.shade700,
-                          ),
-                        if (task.assignedTo == currentUserEmail)
-                          const SizedBox(width: 2),
-                        Text(
-                          task.assignedTo == currentUserEmail
-                              ? 'Bana Atandı'
-                              : task.assignedTo!.split('@')[0],
-                          style: TextStyle(
-                            color: task.assignedTo == currentUserEmail
-                                ? Colors.blue.shade700
-                                : Colors.grey.shade600,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (!canCompleteTask && task.assignedTo != null)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _userRole == 'owner'
-                          ? Colors.orange.shade100
-                          : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _userRole == 'owner'
-                              ? Icons.admin_panel_settings
-                              : Icons.visibility_off,
-                          size: 10,
-                          color: _userRole == 'owner'
-                              ? Colors.orange.shade600
-                              : Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          _userRole == 'owner'
-                              ? 'Yönetici Görünümü'
-                              : 'Sadece Görüntüleme',
-                          style: TextStyle(
-                            color: _userRole == 'owner'
-                                ? Colors.orange.shade600
-                                : Colors.grey.shade600,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
+            const SizedBox(height: 4),
+            // Kategori, atama ve zaman bilgisi
+            Row(
+              children: [
+                if (task.category != null && task.category!.isNotEmpty) ...[
+                  Icon(Icons.category, size: 12, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text(
+                    task.category!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (task.assignedTo != null) ...[
+                  Icon(
+                    task.assignedTo == currentUserEmail
+                        ? Icons.person
+                        : Icons.person_outline,
+                    size: 12,
+                    color: task.assignedTo == currentUserEmail
+                        ? Colors.blue.shade500
+                        : Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    task.assignedTo == currentUserEmail
+                        ? 'Bana Atandı'
+                        : task.assignedTo!.split('@')[0],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: task.assignedTo == currentUserEmail
+                          ? Colors.blue.shade600
+                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (task.dueDateTime != null) ...[
+                  Icon(
+                    Icons.schedule,
+                    size: 12,
+                    color:
+                        task.dueDateTime!.isBefore(DateTime.now()) &&
+                            !task.isCompleted
+                        ? Colors.red.shade500
+                        : Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    task.timeStatus,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          task.dueDateTime!.isBefore(DateTime.now()) &&
+                              !task.isCompleted
+                          ? Colors.red.shade600
+                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            // Yönetici görünümü etiketi
+            if (!canCompleteTask && task.assignedTo != null) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _userRole == 'owner'
+                      ? Colors.orange.shade100
+                      : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _userRole == 'owner'
+                          ? Icons.admin_panel_settings
+                          : Icons.visibility_off,
+                      size: 10,
+                      color: _userRole == 'owner'
+                          ? Colors.orange.shade600
+                          : Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      _userRole == 'owner'
+                          ? 'Yönetici Görünümü'
+                          : 'Sadece Görüntüleme',
+                      style: TextStyle(
+                        color: _userRole == 'owner'
+                            ? Colors.orange.shade600
+                            : Colors.grey.shade600,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
+        subtitle: task.description != null && task.description!.isNotEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  task.description!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: task.isCompleted
+                        ? Colors.grey.shade500
+                        : (canCompleteTask
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade500),
+                    decoration: task.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            : null,
         trailing: canManageTask
             ? PopupMenuButton(
                 itemBuilder: (context) => [
@@ -510,7 +584,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                   }
                 },
               )
-            : null,
+            : Icon(Icons.drag_handle, color: Colors.grey.shade400, size: 20),
       ),
     );
   }
@@ -622,7 +696,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   Widget _buildStatsTab() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -780,103 +854,407 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     String title = '';
     String description = '';
     String priority = 'medium';
+    String category = '';
     String? assignedTo;
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
 
     await showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Yeni Görev Ekle'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(labelText: 'Görev Başlığı'),
-                onChanged: (value) => title = value,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Açıklama'),
-                onChanged: (value) => description = value,
-              ),
-              DropdownButtonFormField<String>(
-                value: priority,
-                decoration: const InputDecoration(labelText: 'Öncelik'),
-                items: const [
-                  DropdownMenuItem(value: 'low', child: Text('Düşük')),
-                  DropdownMenuItem(value: 'medium', child: Text('Orta')),
-                  DropdownMenuItem(value: 'high', child: Text('Yüksek')),
-                ],
-                onChanged: (value) =>
-                    setDialogState(() => priority = value ?? 'medium'),
-              ),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Atanan Kişi'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('Atanmamış')),
-                  ..._members.map(
-                    (member) => DropdownMenuItem(
-                      value: member.userEmail,
-                      child: Text(member.userName),
-                    ),
+              contentPadding: EdgeInsets.zero,
+              content: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.blue.shade50, Colors.purple.shade50],
                   ),
-                ],
-                onChanged: (value) => setDialogState(() => assignedTo = value),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('İptal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (title.isNotEmpty) {
-                  // Context referanslarını önceden al
-                  final navigator = Navigator.of(context);
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-                  final task = ProjectTask(
-                    projectId: widget.project.id!,
-                    title: title,
-                    description: description.isEmpty ? null : description,
-                    priority: priority,
-                    assignedTo: assignedTo,
-                  );
-
-                  try {
-                    await _projectService.addProjectTask(task);
-                    if (mounted) {
-                      navigator.pop();
-                      await _loadProjectData();
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Görev eklendi'),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 2),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.add_task,
+                              color: Colors.blue.shade700,
+                              size: 24,
+                            ),
                           ),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text('Hata: $e'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
+                          const SizedBox(width: 16),
+                          const Text(
+                            'Yeni Proje Görevi Ekle',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Başlık
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Görev Başlığı *',
+                          prefixIcon: const Icon(Icons.title),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
                         ),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Ekle'),
-            ),
-          ],
-        ),
-      ),
+                        onChanged: (value) => title = value,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Açıklama
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Açıklama (İsteğe bağlı)',
+                          prefixIcon: const Icon(Icons.description),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        maxLines: 3,
+                        onChanged: (value) => description = value,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Öncelik
+                      DropdownButtonFormField<String>(
+                        value: priority,
+                        decoration: InputDecoration(
+                          labelText: 'Öncelik',
+                          prefixIcon: const Icon(Icons.priority_high),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'low', child: Text('Düşük')),
+                          DropdownMenuItem(
+                            value: 'medium',
+                            child: Text('Orta'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'high',
+                            child: Text('Yüksek'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'urgent',
+                            child: Text('Acil'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              priority = value;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Kategori
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Kategori (İsteğe bağlı)',
+                          prefixIcon: const Icon(Icons.category),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (value) => category = value,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Atanan Kişi
+                      DropdownButtonFormField<String>(
+                        value: assignedTo,
+                        decoration: InputDecoration(
+                          labelText: 'Atanan Kişi',
+                          prefixIcon: const Icon(Icons.person_add),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Atanmamış'),
+                          ),
+                          ..._members.map(
+                            (member) => DropdownMenuItem(
+                              value: member.userEmail,
+                              child: Text(member.userName),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) =>
+                            setDialogState(() => assignedTo = value),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Tarih Seçimi
+                      InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate ?? DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                          );
+                          if (date != null) {
+                            setDialogState(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today),
+                              const SizedBox(width: 12),
+                              Text(
+                                selectedDate == null
+                                    ? 'Bitiş Tarihi Seç (İsteğe bağlı)'
+                                    : 'Bitiş Tarihi: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                                style: TextStyle(
+                                  color: selectedDate == null
+                                      ? Colors.grey.shade600
+                                      : Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (selectedDate != null)
+                                IconButton(
+                                  icon: const Icon(Icons.clear, size: 20),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      selectedDate = null;
+                                      selectedTime = null;
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Saat Seçimi (sadece tarih seçildiyse)
+                      if (selectedDate != null) ...[
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime ?? TimeOfDay.now(),
+                            );
+                            if (time != null) {
+                              setDialogState(() {
+                                selectedTime = time;
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade400),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time),
+                                const SizedBox(width: 12),
+                                Text(
+                                  selectedTime == null
+                                      ? 'Bitiş Saati Seç (İsteğe bağlı)'
+                                      : 'Bitiş Saati: ${selectedTime!.format(context)}',
+                                  style: TextStyle(
+                                    color: selectedTime == null
+                                        ? Colors.grey.shade600
+                                        : Colors.black87,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (selectedTime != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.clear, size: 20),
+                                    onPressed: () {
+                                      setDialogState(() {
+                                        selectedTime = null;
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'İptal',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (title.trim().isNotEmpty) {
+                                  final context = dialogContext;
+
+                                  // Tarih ve saat bilgilerini hazırla
+                                  String? dueTimeString;
+                                  if (selectedTime != null) {
+                                    dueTimeString =
+                                        '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
+                                  }
+
+                                  final task = ProjectTask(
+                                    projectId: widget.project.id!,
+                                    title: title.trim(),
+                                    description: description.trim().isEmpty
+                                        ? null
+                                        : description.trim(),
+                                    priority: priority,
+                                    category: category.trim().isEmpty
+                                        ? null
+                                        : category.trim(),
+                                    assignedTo: assignedTo,
+                                    dueDate: selectedDate,
+                                    dueTime: dueTimeString,
+                                  );
+
+                                  try {
+                                    await _projectService.addProjectTask(task);
+                                    if (!mounted) return;
+                                    await _loadProjectData();
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+
+                                    // Başarı mesajı
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '${task.title} eklendi',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Hata: $e'),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Ekle',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1304,19 +1682,23 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
   Color _getPriorityColor(String priority) {
     switch (priority) {
+      case 'urgent':
+        return Colors.red.shade500;
       case 'high':
-        return Colors.red;
+        return Colors.orange.shade500;
       case 'medium':
-        return Colors.orange;
+        return Colors.yellow.shade600;
       case 'low':
-        return Colors.green;
+        return Colors.green.shade500;
       default:
-        return Colors.grey;
+        return Colors.grey.shade500;
     }
   }
 
   String _getPriorityText(String priority) {
     switch (priority) {
+      case 'urgent':
+        return 'ACİL';
       case 'high':
         return 'YÜKSEK';
       case 'medium':

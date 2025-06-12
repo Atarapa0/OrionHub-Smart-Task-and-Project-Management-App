@@ -9,17 +9,11 @@ class InitialRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
-        return MaterialPageRoute(
-          builder: (_) => const HomePage(),
-        );
+        return MaterialPageRoute(builder: (_) => const HomePage());
       case '/login':
-        return MaterialPageRoute(
-          builder: (_) => const LoginPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const LoginPage());
       case '/start':
-        return MaterialPageRoute(
-          builder: (_) => const StartPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const StartPage());
       case '/project-detail':
         final project = settings.arguments as Project;
         return MaterialPageRoute(
@@ -27,9 +21,8 @@ class InitialRouter {
         );
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Sayfa bulunamadı')),
-          ),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Sayfa bulunamadı'))),
         );
     }
   }

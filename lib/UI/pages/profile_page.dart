@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:todo_list/UI/pages/login_page.dart';
 import 'package:todo_list/UI/widget/bottom_navigation_controller.dart';
 import 'package:todo_list/UI/widget/custom_app_bar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: const CustomAppBar(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,65 +101,53 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Kullanıcı Bilgileri Kartı
                   Card(
                     elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Kullanıcı Bilgileri',
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 16),
                           Row(
                             children: [
-                              const Icon(Icons.person, color: Colors.blue),
-                              const SizedBox(width: 10),
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.blue.shade100,
+                                child: Text(
+                                  (_userInfo?['full_name'] ?? 'U')
+                                      .split(' ')
+                                      .map(
+                                        (name) =>
+                                            name.isNotEmpty ? name[0] : '',
+                                      )
+                                      .join('')
+                                      .toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Ad Soyad',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
                                     Text(
                                       _userInfo?['full_name'] ?? 'Bilinmiyor',
                                       style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Icon(Icons.email, color: Colors.green),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Email',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
+                                    const SizedBox(height: 4),
                                     Text(
                                       _userInfo?['email'] ?? 'Bilinmiyor',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
                                       ),
                                     ),
                                   ],
@@ -168,61 +155,21 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 20),
+                          const Divider(),
                           const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Icon(Icons.phone, color: Colors.orange),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Telefon',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    Text(
-                                      _userInfo?['telefon'] ?? 'Belirtilmemiş',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          _buildInfoRow(
+                            Icons.phone,
+                            'Telefon',
+                            _userInfo?['telefon'] ?? 'Belirtilmemiş',
+                            Colors.orange,
                           ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Icon(Icons.storage, color: Colors.teal),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Hesap Türü',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Manuel Kayıt',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 12),
+                          _buildInfoRow(
+                            Icons.storage,
+                            'Hesap Türü',
+                            'Manuel Kayıt',
+                            Colors.teal,
                           ),
                         ],
                       ),
@@ -230,55 +177,125 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Çıkış Yap Butonu
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final scaffoldMessenger = ScaffoldMessenger.of(context);
-                        final navigator = Navigator.of(context);
-
-                        try {
-                          // Manuel giriş bilgilerini temizle
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.remove('isManuallyLoggedIn');
-                          await prefs.remove('loggedInUserEmail');
-                          await prefs.remove('loggedInUserName');
-
-                          if (!mounted) return;
-
-                          navigator.pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                            (route) => false,
-                          );
-                        } catch (e) {
-                          if (!mounted) return;
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Çıkış yapılırken hata oluştu: ${e.toString()}',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        'Çıkış Yap',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                  // Menü Seçenekleri
+                  Text(
+                    'Menü',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Bildirimler
+                  _buildMenuCard(
+                    icon: Icons.notifications,
+                    title: 'Bildirimler',
+                    subtitle: 'Görev hatırlatmaları ve proje davetleri',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/notifications');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Ayarlar
+                  _buildMenuCard(
+                    icon: Icons.settings,
+                    title: 'Ayarlar',
+                    subtitle: 'Şifre değiştirme ve hesap ayarları',
+                    color: Colors.grey,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/settings');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Yardım
+                  _buildMenuCard(
+                    icon: Icons.help,
+                    title: 'Yardım',
+                    subtitle: 'Uygulama kullanımı ve SSS',
+                    color: Colors.green,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/help');
+                    },
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
       bottomNavigationBar: const BottomNavigationController(initialIndex: 2),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.grey.shade400,
+          size: 16,
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
