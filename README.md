@@ -13,13 +13,13 @@
 ## 📸 Ekran Görüntüleri
 
 ### Ana Sayfa
-<!-- Ana sayfa resmi buraya gelecek -->
+<img width="326" alt="Ekran Resmi 2025-06-12 20 46 13" src="https://github.com/user-attachments/assets/34d988b7-235e-4d53-940c-b0d150ab1699" />
 
 ### Proje Yönetimi
-<!-- Proje yönetimi resmi buraya gelecek -->
+<img width="330" alt="Ekran Resmi 2025-06-12 20 46 25" src="https://github.com/user-attachments/assets/c5434191-386a-491c-92ea-150c28a07190" />
 
 ### Bildirimler
-<!-- Bildirimler sayfası resmi buraya gelecek -->
+<img width="331" alt="Ekran Resmi 2025-06-12 20 46 38" src="https://github.com/user-attachments/assets/9f6552c3-ee09-4297-82a5-e26681503fc9" />
 
 ## 🚀 Özellikler
 
@@ -194,9 +194,9 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 **Proje Sahibi**: [Furkan Erdoğan]
 - Email: [furkaan.er@gmail.com]
-- LinkedIn: [LinkedIn Profiliniz]
+- LinkedIn: [https://www.linkedin.com/in/furkan-erdogan/]
 
-**Proje Linki**: [https://github.com/kullaniciadi/orionhub](https://github.com/kullaniciadi/orionhub)
+**Proje Linki**: [https://github.com/Atarapa0/orionhub](https://github.com/Atarapa0/orionhub)
 
 ## 🙏 Teşekkürler
 
