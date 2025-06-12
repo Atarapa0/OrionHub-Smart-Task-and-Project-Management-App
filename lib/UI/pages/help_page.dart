@@ -168,7 +168,7 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 _buildStepItem(
                   '4',
                   'Bildirimleri Kontrol Edin',
-                  'Bildirimler sayfasından görev hatırlatmalarını ve davetleri takip edin.',
+                  'Bildirimler sayfasından görev hatırlatmalarını, proje davetlerini ve görev atama bildirimlerini takip edin. Bildirimler 4 kategoride organize edilmiştir.',
                 ),
               ],
             ),
@@ -309,6 +309,11 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                   'Proje detay sayfasında "İstatistikler" sekmesinden proje ilerlemesini takip edin.',
                   Icons.analytics,
                 ),
+                _buildHelpItem(
+                  'Proje Silme',
+                  'Sadece proje sahibi projeyi silebilir. Proje detay sayfasında sağ üst menüden "Projeyi Sil" seçeneğini kullanın. Bu işlem geri alınamaz ve tüm proje verileri silinir.',
+                  Icons.delete_forever,
+                ),
               ],
             ),
           ),
@@ -366,6 +371,11 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                   'Gönderilen davetlerin durumunu (beklemede, kabul edildi, reddedildi) takip edebilirsiniz.',
                   Icons.track_changes,
                 ),
+                _buildHelpItem(
+                  'Davet İptal Etme',
+                  'Proje sahibi, bekleyen davetleri proje detay sayfasındaki "Bekleyen Davetler" bölümünden iptal edebilir.',
+                  Icons.cancel,
+                ),
               ],
             ),
           ),
@@ -397,11 +407,15 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 ),
                 _buildFAQItem(
                   'Bildirimler nasıl çalışır?',
-                  'Sistem otomatik olarak görev hatırlatmaları, proje davetleri ve görev atamaları için bildirim gönderir. Bildirimler sayfasından tümünü görüntüleyebilirsiniz.',
+                  'Sistem otomatik olarak görev hatırlatmaları, proje davetleri ve görev atamaları için bildirim gönderir. Bildirimler sayfasında 4 kategori bulunur: Tümü, Proje Bildirimleri, Kişisel Görevler ve Davetler.',
                 ),
                 _buildFAQItem(
                   'Projeden nasıl ayrılırım?',
                   'Şu anda projeden ayrılma özelliği bulunmamaktadır. Proje sahibi sizi projeden çıkarabilir.',
+                ),
+                _buildFAQItem(
+                  'Gönderdiğim davetleri iptal edebilir miyim?',
+                  'Evet, proje sahibi olarak bekleyen davetleri proje detay sayfasından iptal edebilirsiniz. Kabul edilmiş veya reddedilmiş davetler iptal edilemez.',
                 ),
                 _buildFAQItem(
                   'Verilerim güvende mi?',
@@ -445,6 +459,14 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                 _buildTipItem(
                   '📊',
                   'Proje istatistiklerini takip ederek ilerlemenizi ölçün.',
+                ),
+                _buildTipItem(
+                  '🔔',
+                  'Bildirimler sayfasını düzenli kontrol ederek önemli güncellemeleri kaçırmayın.',
+                ),
+                _buildTipItem(
+                  '🗑️',
+                  'Artık ihtiyaç duymadığınız projeleri güvenle silebilirsiniz (sadece proje sahibi).',
                 ),
               ],
             ),
