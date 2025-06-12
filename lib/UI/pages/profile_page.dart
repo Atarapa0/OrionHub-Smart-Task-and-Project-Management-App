@@ -58,16 +58,14 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
 
-      if (_userInfo == null) {
-        _userInfo = {
-          'email': 'Kullanıcı bulunamadı',
-          'ad': 'Ad bulunamadı',
-          'soyad': 'Soyad bulunamadı',
-          'telefon': 'Telefon bulunamadı',
-          'full_name': 'Kullanıcı bulunamadı',
-          'auth_type': 'unknown',
-        };
-      }
+      _userInfo ??= {
+        'email': 'Kullanıcı bulunamadı',
+        'ad': 'Ad bulunamadı',
+        'soyad': 'Soyad bulunamadı',
+        'telefon': 'Telefon bulunamadı',
+        'full_name': 'Kullanıcı bulunamadı',
+        'auth_type': 'unknown',
+      };
     } catch (e) {
       debugPrint('Kullanıcı bilgileri yüklenirken hata: $e');
       _userInfo = {

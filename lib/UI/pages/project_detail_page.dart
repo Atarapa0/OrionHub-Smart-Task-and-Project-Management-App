@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:todo_list/UI/widget/bottom_navigation_controller.dart';
 import 'package:todo_list/data/models/project.dart';
 import 'package:todo_list/data/models/project_member.dart';
 import 'package:todo_list/data/models/project_task.dart';
@@ -23,6 +24,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   List<ProjectTask> _tasks = [];
   Map<String, dynamic> _stats = {};
   String? _userRole;
+  String? _currentUserEmail;
   bool _isLoading = true;
 
   @override
@@ -39,9 +41,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   Future<void> _loadProjectData() async {
+    if (!mounted) return;
+
     setState(() => _isLoading = true);
 
     try {
+      // Önce kullanıcı email'ini al
+      _currentUserEmail = await _projectService.getCurrentUserEmail();
+
       final results = await Future.wait([
         _projectService.getProjectMembers(widget.project.id!),
         _projectService.getProjectTasks(widget.project.id!),
@@ -59,11 +66,16 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
         });
       }
     } catch (e) {
+      debugPrint('Veri yükleme hatası: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Veri yüklenirken hata: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Veri yüklenirken hata: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -110,7 +122,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                   Text(
                                     widget.project.description!,
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       fontSize: 16,
                                     ),
                                   ),
@@ -123,7 +137,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -193,6 +207,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                 ),
               ],
             ),
+      bottomNavigationBar: const BottomNavigationController(initialIndex: 1),
     );
   }
 
@@ -201,7 +216,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -219,7 +234,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             Text(
               title,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 12,
               ),
             ),
@@ -232,32 +247,63 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   Widget _buildTasksTab() {
     return Column(
       children: [
-        // Görev Ekleme Butonu
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            onPressed: _showAddTaskDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('Yeni Görev Ekle'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+        // Görev Ekleme Butonu (sadece proje sahibi için)
+        if (_userRole == 'owner')
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              onPressed: _showAddTaskDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Yeni Görev Ekle'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
             ),
           ),
-        ),
+
+        // Bilgi mesajı
+        if (_userRole != 'owner')
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade600, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Sadece size atanan görevleri görüyorsunuz. Kendi görevlerinizi tamamlayabilirsiniz.',
+                    style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
         // Görevler Listesi
         Expanded(
           child: _tasks.isEmpty
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.task_outlined, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('Henüz görev yok'),
+                      const SizedBox(height: 16),
+                      Text(
+                        _userRole == 'owner'
+                            ? 'Henüz görev yok'
+                            : 'Size atanmış görev yok',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
                 )
@@ -274,11 +320,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   Widget _buildTaskCard(ProjectTask task) {
+    final currentUserEmail = _getCurrentUserEmail();
+    // Sadece görevin sahibi kendi görevini tamamlayabilir
+    final canCompleteTask = task.assignedTo == currentUserEmail;
+    // Proje sahibi tüm görevleri yönetebilir (atama, silme)
+    final canManageTask = _userRole == 'owner';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: GestureDetector(
-          onTap: () => _updateTaskStatus(task),
+          onTap: canCompleteTask ? () => _updateTaskStatus(task) : null,
           child: Container(
             width: 24,
             height: 24,
@@ -286,13 +338,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               shape: BoxShape.circle,
               color: task.isCompleted ? Colors.green : Colors.transparent,
               border: Border.all(
-                color: task.isCompleted ? Colors.green : Colors.grey,
+                color: task.isCompleted
+                    ? Colors.green
+                    : (canCompleteTask ? Colors.grey : Colors.grey.shade300),
                 width: 2,
               ),
             ),
             child: task.isCompleted
                 ? const Icon(Icons.check, color: Colors.white, size: 16)
-                : null,
+                : (canCompleteTask
+                      ? null
+                      : Icon(
+                          Icons.visibility,
+                          color: Colors.grey.shade400,
+                          size: 12,
+                        )),
           ),
         ),
         title: Text(
@@ -300,12 +360,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           style: TextStyle(
             decoration: task.isCompleted ? TextDecoration.lineThrough : null,
             fontWeight: FontWeight.w600,
+            color: canCompleteTask ? null : Colors.grey.shade600,
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (task.description != null) Text(task.description!),
+            if (task.description != null)
+              Text(
+                task.description!,
+                style: TextStyle(
+                  color: canCompleteTask ? null : Colors.grey.shade500,
+                ),
+              ),
             const SizedBox(height: 4),
             Row(
               children: [
@@ -335,53 +402,115 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
+                      color: task.assignedTo == currentUserEmail
+                          ? Colors.blue.shade100
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      task.assignedTo!.split('@')[0],
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (task.assignedTo == currentUserEmail)
+                          Icon(
+                            Icons.person,
+                            size: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        if (task.assignedTo == currentUserEmail)
+                          const SizedBox(width: 2),
+                        Text(
+                          task.assignedTo == currentUserEmail
+                              ? 'Bana Atandı'
+                              : task.assignedTo!.split('@')[0],
+                          style: TextStyle(
+                            color: task.assignedTo == currentUserEmail
+                                ? Colors.blue.shade700
+                                : Colors.grey.shade600,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (!canCompleteTask && task.assignedTo != null)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _userRole == 'owner'
+                          ? Colors.orange.shade100
+                          : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _userRole == 'owner'
+                              ? Icons.admin_panel_settings
+                              : Icons.visibility_off,
+                          size: 10,
+                          color: _userRole == 'owner'
+                              ? Colors.orange.shade600
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          _userRole == 'owner'
+                              ? 'Yönetici Görünümü'
+                              : 'Sadece Görüntüleme',
+                          style: TextStyle(
+                            color: _userRole == 'owner'
+                                ? Colors.orange.shade600
+                                : Colors.grey.shade600,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
             ),
           ],
         ),
-        trailing: PopupMenuButton(
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'assign',
-              child: const Row(
-                children: [
-                  Icon(Icons.person_add),
-                  SizedBox(width: 8),
-                  Text('Ata'),
+        trailing: canManageTask
+            ? PopupMenuButton(
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'assign',
+                    child: const Row(
+                      children: [
+                        Icon(Icons.person_add),
+                        SizedBox(width: 8),
+                        Text('Ata'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: const Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Sil'),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'delete',
-              child: const Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Sil'),
-                ],
-              ),
-            ),
-          ],
-          onSelected: (value) {
-            if (value == 'assign') {
-              _showAssignTaskDialog(task);
-            } else if (value == 'delete') {
-              _deleteTask(task);
-            }
-          },
-        ),
+                onSelected: (value) {
+                  if (value == 'assign') {
+                    _showAssignTaskDialog(task);
+                  } else if (value == 'delete') {
+                    _deleteTask(task);
+                  }
+                },
+              )
+            : null,
       ),
     );
   }
@@ -497,6 +626,39 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Bilgi mesajı
+          if (_userRole != 'owner')
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bar_chart,
+                    color: Colors.orange.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Bu istatistikler sadece size atanan görevleri kapsar.',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Görev Durumu Grafiği
           Card(
             child: Padding(
@@ -504,9 +666,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Görev Durumu',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    _userRole == 'owner'
+                        ? 'Proje Görev Durumu'
+                        : 'Görevlerim Durumu',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildProgressBar(
@@ -554,10 +721,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                     'Geciken Görevler',
                     '${_stats['overdue_tasks'] ?? 0}',
                   ),
-                  _buildStatRow(
-                    'Toplam Üye',
-                    '${_stats['total_members'] ?? 0}',
-                  ),
+                  if (_userRole == 'owner')
+                    _buildStatRow(
+                      'Toplam Üye',
+                      '${_stats['total_members'] ?? 0}',
+                    ),
                   _buildStatRow(
                     'Tamamlanma Oranı',
                     '%${_stats['completion_rate'] ?? 0}',
@@ -616,77 +784,98 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yeni Görev Ekle'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(labelText: 'Görev Başlığı'),
-              onChanged: (value) => title = value,
-            ),
-            TextField(
-              decoration: const InputDecoration(labelText: 'Açıklama'),
-              onChanged: (value) => description = value,
-            ),
-            DropdownButtonFormField<String>(
-              value: priority,
-              decoration: const InputDecoration(labelText: 'Öncelik'),
-              items: const [
-                DropdownMenuItem(value: 'low', child: Text('Düşük')),
-                DropdownMenuItem(value: 'medium', child: Text('Orta')),
-                DropdownMenuItem(value: 'high', child: Text('Yüksek')),
-              ],
-              onChanged: (value) => priority = value ?? 'medium',
-            ),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Atanan Kişi'),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Atanmamış')),
-                ..._members.map(
-                  (member) => DropdownMenuItem(
-                    value: member.userEmail,
-                    child: Text(member.userName),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Yeni Görev Ekle'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: const InputDecoration(labelText: 'Görev Başlığı'),
+                onChanged: (value) => title = value,
+              ),
+              TextField(
+                decoration: const InputDecoration(labelText: 'Açıklama'),
+                onChanged: (value) => description = value,
+              ),
+              DropdownButtonFormField<String>(
+                value: priority,
+                decoration: const InputDecoration(labelText: 'Öncelik'),
+                items: const [
+                  DropdownMenuItem(value: 'low', child: Text('Düşük')),
+                  DropdownMenuItem(value: 'medium', child: Text('Orta')),
+                  DropdownMenuItem(value: 'high', child: Text('Yüksek')),
+                ],
+                onChanged: (value) =>
+                    setDialogState(() => priority = value ?? 'medium'),
+              ),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Atanan Kişi'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Atanmamış')),
+                  ..._members.map(
+                    (member) => DropdownMenuItem(
+                      value: member.userEmail,
+                      child: Text(member.userName),
+                    ),
                   ),
-                ),
-              ],
-              onChanged: (value) => assignedTo = value,
+                ],
+                onChanged: (value) => setDialogState(() => assignedTo = value),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (title.isNotEmpty) {
+                  // Context referanslarını önceden al
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                  final task = ProjectTask(
+                    projectId: widget.project.id!,
+                    title: title,
+                    description: description.isEmpty ? null : description,
+                    priority: priority,
+                    assignedTo: assignedTo,
+                  );
+
+                  try {
+                    await _projectService.addProjectTask(task);
+                    if (mounted) {
+                      navigator.pop();
+                      await _loadProjectData();
+                      if (mounted) {
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Görev eklendi'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Hata: $e'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Ekle'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (title.isNotEmpty) {
-                final task = ProjectTask(
-                  projectId: widget.project.id!,
-                  title: title,
-                  description: description.isEmpty ? null : description,
-                  priority: priority,
-                  assignedTo: assignedTo,
-                );
-
-                try {
-                  await _projectService.addProjectTask(task);
-                  Navigator.pop(context);
-                  _loadProjectData();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Görev eklendi')),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-                }
-              }
-            },
-            child: const Text('Ekle'),
-          ),
-        ],
       ),
     );
   }
@@ -694,70 +883,153 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   Future<void> _showAddMemberDialog() async {
     String searchQuery = '';
     List<Map<String, dynamic>> searchResults = [];
+    bool isSearching = false;
 
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           title: const Text('Üye Ekle'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Kullanıcı Ara',
-                  hintText: 'Email veya isim girin',
-                ),
-                onChanged: (value) async {
-                  searchQuery = value;
-                  if (value.length >= 2) {
-                    final results = await _projectService.searchRegisteredUsers(
-                      value,
-                    );
-                    setState(() => searchResults = results);
-                  } else {
-                    setState(() => searchResults = []);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              if (searchResults.isNotEmpty)
-                SizedBox(
-                  height: 200,
-                  child: ListView.builder(
-                    itemCount: searchResults.length,
-                    itemBuilder: (context, index) {
-                      final user = searchResults[index];
-                      return ListTile(
-                        title: Text(user['name']),
-                        subtitle: Text(user['email']),
-                        onTap: () async {
-                          try {
-                            await _projectService.addMemberToProject(
-                              projectId: widget.project.id!,
-                              userEmail: user['email'],
-                              userName: user['name'],
-                            );
-                            Navigator.pop(context);
-                            _loadProjectData();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${user['name']} projeye eklendi',
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-                          }
-                        },
-                      );
-                    },
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Kullanıcı Ara',
+                    hintText: 'Email veya isim girin',
+                    prefixIcon: Icon(Icons.search),
                   ),
+                  onChanged: (value) async {
+                    searchQuery = value;
+                    if (value.length >= 2) {
+                      setDialogState(() => isSearching = true);
+                      try {
+                        final results = await _projectService
+                            .searchRegisteredUsers(value);
+                        // Zaten proje üyesi olanları filtrele
+                        final filteredResults = results.where((user) {
+                          return !_members.any(
+                            (member) => member.userEmail == user['email'],
+                          );
+                        }).toList();
+
+                        if (mounted) {
+                          setDialogState(() {
+                            searchResults = filteredResults;
+                            isSearching = false;
+                          });
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          setDialogState(() {
+                            searchResults = [];
+                            isSearching = false;
+                          });
+                        }
+                      }
+                    } else {
+                      setDialogState(() {
+                        searchResults = [];
+                        isSearching = false;
+                      });
+                    }
+                  },
                 ),
-            ],
+                const SizedBox(height: 16),
+                if (isSearching)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(),
+                  )
+                else if (searchQuery.length >= 2 && searchResults.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'Kullanıcı bulunamadı veya tüm kullanıcılar zaten üye',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                else if (searchResults.isNotEmpty)
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      itemCount: searchResults.length,
+                      itemBuilder: (context, index) {
+                        final user = searchResults[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blue.shade100,
+                            child: Text(
+                              user['name']
+                                  .toString()
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(user['name']),
+                          subtitle: Text(user['email']),
+                          trailing: const Icon(
+                            Icons.add_circle,
+                            color: Colors.green,
+                          ),
+                          onTap: () async {
+                            // Context referanslarını önceden al
+                            final navigator = Navigator.of(context);
+                            final scaffoldMessenger = ScaffoldMessenger.of(
+                              context,
+                            );
+
+                            try {
+                              await _projectService.addMemberToProject(
+                                projectId: widget.project.id!,
+                                userEmail: user['email'],
+                                userName: user['name'],
+                              );
+
+                              if (mounted) {
+                                navigator.pop();
+                                await _loadProjectData();
+                                if (mounted) {
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${user['name']} projeye eklendi',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Hata: $e'),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -775,45 +1047,65 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Görev Ata'),
-        content: DropdownButtonFormField<String>(
-          value: selectedMember,
-          decoration: const InputDecoration(labelText: 'Atanan Kişi'),
-          items: [
-            const DropdownMenuItem(value: null, child: Text('Atanmamış')),
-            ..._members.map(
-              (member) => DropdownMenuItem(
-                value: member.userEmail,
-                child: Text(member.userName),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Görev Ata'),
+          content: DropdownButtonFormField<String>(
+            value: selectedMember,
+            decoration: const InputDecoration(labelText: 'Atanan Kişi'),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Atanmamış')),
+              ..._members.map(
+                (member) => DropdownMenuItem(
+                  value: member.userEmail,
+                  child: Text(member.userName),
+                ),
               ),
+            ],
+            onChanged: (value) => setDialogState(() => selectedMember = value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Context referanslarını önceden al
+                final navigator = Navigator.of(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                try {
+                  await _projectService.assignTask(task.id!, selectedMember);
+                  if (mounted) {
+                    navigator.pop();
+                    await _loadProjectData();
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Görev atandı'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Hata: $e'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Ata'),
             ),
           ],
-          onChanged: (value) => selectedMember = value,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _projectService.assignTask(task.id!, selectedMember);
-                Navigator.pop(context);
-                _loadProjectData();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Görev atandı')));
-              } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-              }
-            },
-            child: const Text('Ata'),
-          ),
-        ],
       ),
     );
   }
@@ -823,43 +1115,64 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rol Değiştir'),
-        content: DropdownButtonFormField<String>(
-          value: selectedRole,
-          decoration: const InputDecoration(labelText: 'Rol'),
-          items: const [
-            DropdownMenuItem(value: 'member', child: Text('Üye')),
-            DropdownMenuItem(value: 'admin', child: Text('Yönetici')),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Rol Değiştir'),
+          content: DropdownButtonFormField<String>(
+            value: selectedRole,
+            decoration: const InputDecoration(labelText: 'Rol'),
+            items: const [
+              DropdownMenuItem(value: 'member', child: Text('Üye')),
+              DropdownMenuItem(value: 'admin', child: Text('Yönetici')),
+            ],
+            onChanged: (value) =>
+                setDialogState(() => selectedRole = value ?? 'member'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Context referanslarını önceden al
+                final navigator = Navigator.of(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                try {
+                  await _projectService.updateMemberRole(
+                    member.id!,
+                    selectedRole,
+                  );
+                  if (mounted) {
+                    navigator.pop();
+                    await _loadProjectData();
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Rol güncellendi'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Hata: $e'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Güncelle'),
+            ),
           ],
-          onChanged: (value) => selectedRole = value ?? 'member',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _projectService.updateMemberRole(
-                  member.id!,
-                  selectedRole,
-                );
-                Navigator.pop(context);
-                _loadProjectData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Rol güncellendi')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-              }
-            },
-            child: const Text('Güncelle'),
-          ),
-        ],
       ),
     );
   }
@@ -869,11 +1182,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
     try {
       await _projectService.updateTaskStatus(task.id!, newStatus);
-      _loadProjectData();
+      if (mounted) {
+        await _loadProjectData();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -899,17 +1220,32 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
+      // Context referanslarını önceden al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
       try {
         await _projectService.deleteProjectTask(task.id!);
-        _loadProjectData();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Görev silindi')));
+        await _loadProjectData();
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text('Görev silindi'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Hata: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }
@@ -936,17 +1272,32 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
+      // Context referanslarını önceden al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
       try {
         await _projectService.removeMemberFromProject(member.id!);
-        _loadProjectData();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Üye çıkarıldı')));
+        await _loadProjectData();
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text('Üye çıkarıldı'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Hata: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }
@@ -1001,5 +1352,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
       default:
         return 'ÜYE';
     }
+  }
+
+  // Mevcut kullanıcının email'ini al
+  String? _getCurrentUserEmail() {
+    return _currentUserEmail;
   }
 }

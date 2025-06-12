@@ -19,6 +19,11 @@ class ProjectManagementService {
     }
   }
 
+  // Public method for getting current user email
+  Future<String?> getCurrentUserEmail() async {
+    return await _getCurrentUserEmail();
+  }
+
   // Kullanıcı email'ini Supabase context'ine set et
   Future<void> _setUserContext() async {
     final email = await _getCurrentUserEmail();
@@ -114,6 +119,32 @@ class ProjectManagementService {
       await _setUserContext();
       final currentUserEmail = await _getCurrentUserEmail();
 
+      // Önce kullanıcının zaten üye olup olmadığını kontrol et
+      final existingMember = await _supabase
+          .from('project_members')
+          .select('id, status')
+          .eq('project_id', projectId)
+          .eq('user_email', userEmail)
+          .maybeSingle();
+
+      if (existingMember != null) {
+        if (existingMember['status'] == 'active') {
+          throw Exception('Bu kullanıcı zaten proje üyesi');
+        } else {
+          // Eğer daha önce çıkarılmış veya davet edilmişse, tekrar aktif yap
+          await _supabase
+              .from('project_members')
+              .update({
+                'status': 'active',
+                'role': role,
+                'joined_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', existingMember['id']);
+          return true;
+        }
+      }
+
+      // Yeni üye ekle
       await _supabase.from('project_members').insert({
         'project_id': projectId,
         'user_email': userEmail,
@@ -166,8 +197,41 @@ class ProjectManagementService {
 
   // PROJE GÖREVLERİ YÖNETİMİ
 
-  // Proje görevlerini getir
+  // Proje görevlerini getir (rol bazlı filtreleme ile)
   Future<List<ProjectTask>> getProjectTasks(String projectId) async {
+    try {
+      await _setUserContext();
+      final currentUserEmail = await _getCurrentUserEmail();
+      final userRole = await getUserRoleInProject(projectId);
+
+      final response = await _supabase
+          .from('project_tasks')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', ascending: false);
+
+      final allTasks = response
+          .map((json) => ProjectTask.fromJson(json))
+          .toList();
+
+      // Rol bazlı filtreleme
+      if (userRole == 'owner') {
+        // Proje sahibi tüm görevleri görebilir
+        return allTasks;
+      } else {
+        // Üyeler sadece kendilerine atanan görevleri görebilir
+        return allTasks
+            .where((task) => task.assignedTo == currentUserEmail)
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Proje görevleri getirilirken hata: $e');
+      throw Exception('Proje görevleri yüklenemedi: $e');
+    }
+  }
+
+  // Tüm proje görevlerini getir (sadece proje sahibi için)
+  Future<List<ProjectTask>> getAllProjectTasks(String projectId) async {
     try {
       await _setUserContext();
 
@@ -179,8 +243,57 @@ class ProjectManagementService {
 
       return response.map((json) => ProjectTask.fromJson(json)).toList();
     } catch (e) {
-      debugPrint('Proje görevleri getirilirken hata: $e');
-      throw Exception('Proje görevleri yüklenemedi: $e');
+      debugPrint('Tüm proje görevleri getirilirken hata: $e');
+      throw Exception('Tüm proje görevleri yüklenemedi: $e');
+    }
+  }
+
+  // Kullanıcının kendi görevlerini getir
+  Future<List<ProjectTask>> getUserTasks(String projectId) async {
+    try {
+      await _setUserContext();
+      final currentUserEmail = await _getCurrentUserEmail();
+      if (currentUserEmail == null) return [];
+
+      final response = await _supabase
+          .from('project_tasks')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('assigned_to', currentUserEmail)
+          .order('created_at', ascending: false);
+
+      return response.map((json) => ProjectTask.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Kullanıcı görevleri getirilirken hata: $e');
+      throw Exception('Kullanıcı görevleri yüklenemedi: $e');
+    }
+  }
+
+  // Görev durumunu güncelleme yetkisi kontrolü
+  Future<bool> canUpdateTaskStatus(String taskId) async {
+    try {
+      await _setUserContext();
+      final currentUserEmail = await _getCurrentUserEmail();
+      if (currentUserEmail == null) return false;
+
+      final response = await _supabase
+          .from('project_tasks')
+          .select('assigned_to, project_id')
+          .eq('id', taskId)
+          .single();
+
+      final projectId = response['project_id'];
+      final assignedTo = response['assigned_to'];
+      final userRole = await getUserRoleInProject(projectId);
+
+      // Proje sahibi her görevin durumunu değiştirebilir
+      if (userRole == 'owner') return true;
+
+      // Diğer kullanıcılar sadece kendilerine atanan görevlerin durumunu değiştirebilir
+      return assignedTo == currentUserEmail;
+    } catch (e) {
+      debugPrint('Görev güncelleme yetkisi kontrol hatası: $e');
+      return false;
     }
   }
 
@@ -207,10 +320,25 @@ class ProjectManagementService {
     try {
       await _setUserContext();
 
-      await _supabase
-          .from('project_tasks')
-          .update({'status': newStatus})
-          .eq('id', taskId);
+      // Önce yetki kontrolü yap
+      final canUpdate = await canUpdateTaskStatus(taskId);
+      if (!canUpdate) {
+        throw Exception('Bu görevi güncelleme yetkiniz yok');
+      }
+
+      final updateData = <String, dynamic>{
+        'status': newStatus,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      // Eğer görev tamamlanıyorsa completed_at tarihini ekle
+      if (newStatus == 'done') {
+        updateData['completed_at'] = DateTime.now().toIso8601String();
+      } else {
+        updateData['completed_at'] = null;
+      }
+
+      await _supabase.from('project_tasks').update(updateData).eq('id', taskId);
 
       return true;
     } catch (e) {
@@ -350,9 +478,16 @@ class ProjectManagementService {
   Future<Map<String, dynamic>> getProjectStats(String projectId) async {
     try {
       await _setUserContext();
+      final userRole = await getUserRoleInProject(projectId);
 
-      // Görev istatistikleri
-      final tasks = await getProjectTasks(projectId);
+      // Görev istatistikleri - rol bazlı
+      List<ProjectTask> tasks;
+      if (userRole == 'owner') {
+        tasks = await getAllProjectTasks(projectId); // Tüm görevler
+      } else {
+        tasks = await getUserTasks(projectId); // Sadece kullanıcının görevleri
+      }
+
       final members = await getProjectMembers(projectId);
 
       final totalTasks = tasks.length;
@@ -381,6 +516,7 @@ class ProjectManagementService {
         'completion_rate': totalTasks > 0
             ? (completedTasks / totalTasks * 100).round()
             : 0,
+        'user_role': userRole, // Kullanıcı rolünü de ekle
       };
     } catch (e) {
       debugPrint('Proje istatistikleri getirilirken hata: $e');

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_list/UI/widget/bottom_navigation_controller.dart';
 import 'package:todo_list/UI/widget/custom_app_bar.dart';
-import 'package:todo_list/core/consants/color_file.dart';
 import 'package:todo_list/data/models/task.dart';
 import 'package:todo_list/data/services/task_service.dart';
 
@@ -301,234 +300,262 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       appBar: const CustomAppBar(),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            // Header Section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.blue.shade600, Colors.purple.shade600],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Hoş Geldiniz! 👋',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Bugün hangi görevleri tamamlayacaksınız?',
-                      style: TextStyle(fontSize: 16, color: Colors.white70),
-                    ),
-                    const SizedBox(height: 20),
-                    FutureBuilder<List<Task>>(
-                      future: _taskService.fetchTasksForCurrentUser(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          final tasks = snapshot.data!;
-                          final completedTasks = tasks
-                              .where((task) => task.isDone)
-                              .length;
-                          final totalTasks = tasks.length;
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // İlerleme Kartı
+              FutureBuilder<List<Task>>(
+                future: _taskService.fetchTasksForCurrentUser(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final tasks = snapshot.data!;
+                    final completedTasks = tasks
+                        .where((task) => task.isDone)
+                        .length;
+                    final totalTasks = tasks.length;
 
-                          return Container(
-                            padding: const EdgeInsets.all(16),
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.blue.shade400,
+                            Colors.purple.shade400,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
+                            child: const Icon(
+                              Icons.analytics_outlined,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.analytics_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'İlerleme',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$completedTasks / $totalTasks görev tamamlandı',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
+                                const Text(
+                                  'Bugünkü İlerlemeniz',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                CircularProgressIndicator(
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$completedTasks / $totalTasks görev tamamlandı',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                LinearProgressIndicator(
                                   value: totalTasks > 0
                                       ? completedTasks / totalTasks
                                       : 0,
                                   backgroundColor: Colors.white.withOpacity(
                                     0.3,
                                   ),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                  strokeWidth: 3,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                               ],
                             ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
+                          ),
+                          const SizedBox(width: 16),
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(
+                                  value: totalTasks > 0
+                                      ? completedTasks / totalTasks
+                                      : 0,
+                                  backgroundColor: Colors.white.withOpacity(
+                                    0.3,
+                                  ),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                  strokeWidth: 4,
+                                ),
+                              ),
+                              Text(
+                                totalTasks > 0
+                                    ? '${((completedTasks / totalTasks) * 100).round()}%'
+                                    : '0%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
-            ),
 
-            // Tasks List Section
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              // Görevler Başlığı
+              Row(
+                children: [
+                  Icon(Icons.task_alt, color: Colors.grey.shade700, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Görevleriniz',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.task_alt,
-                          color: Colors.grey.shade700,
-                          size: 24,
+                          Icons.swipe_left,
+                          size: 16,
+                          color: Colors.blue.shade600,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         Text(
-                          'Görevleriniz',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'Silmek için sola kaydırın',
+                          'Sola kaydır',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: Colors.blue.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: FutureBuilder<List<Task>>(
-                        future: _taskService.fetchTasksForCurrentUser(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (snapshot.hasError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 64,
-                                    color: Colors.red.shade300,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Bir hata oluştu',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${snapshot.error}',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Görevler Listesi
+              Expanded(
+                child: FutureBuilder<List<Task>>(
+                  future: _taskService.fetchTasksForCurrentUser(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Bir hata oluştu',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
                               ),
-                            );
-                          } else if (!snapshot.hasData ||
-                              snapshot.data!.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.task_outlined,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Henüz görev yok',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'İlk görevinizi eklemek için + butonuna tıklayın',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${snapshot.error}',
+                              style: TextStyle(color: Colors.grey.shade600),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.task_outlined,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Henüz görev yok',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
                               ),
-                            );
-                          } else {
-                            final tasks = snapshot.data!;
-                            return ListView.builder(
-                              itemCount: tasks.length,
-                              itemBuilder: (context, index) {
-                                return _buildTaskItem(tasks[index], index);
-                              },
-                            );
-                          }
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'İlk görevinizi eklemek için + butonuna tıklayın',
+                              style: TextStyle(color: Colors.grey.shade600),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      final tasks = snapshot.data!;
+                      return ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          return _buildTaskItem(tasks[index], index);
                         },
-                      ),
-                    ),
-                  ],
+                      );
+                    }
+                  },
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -541,7 +568,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      bottomNavigationBar: const BottomNavigationController(),
+      bottomNavigationBar: const BottomNavigationController(initialIndex: 0),
     );
   }
 }

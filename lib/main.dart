@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/UI/router/initial_router.dart';
 import 'package:todo_list/core/config/supabase_config.dart';
 import 'package:todo_list/core/services/launch_service.dart';

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:todo_list/core/consants/color_file.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
