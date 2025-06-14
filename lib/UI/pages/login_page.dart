@@ -89,12 +89,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginUser() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen email ve şifre giriniz')),
-      );
-      return;
-    }
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lütfen email ve şifre giriniz')),
+        );
+        return;
+      }
 
     setState(() => _isLoading = true);
     bool loginSuccessful = false;
@@ -112,60 +112,60 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         // Manuel giriş başarısız olursa Supabase Auth dene
-        final supabase = Supabase.instance.client;
+      final supabase = Supabase.instance.client;
 
         try {
-          final res = await supabase.auth.signInWithPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
-
-          final user = res.user;
-          if (user == null) {
-            throw Exception('Giriş başarısız');
-          }
+      final res = await supabase.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      
+      final user = res.user;
+      if (user == null) {
+        throw Exception('Giriş başarısız');
+      }
 
           debugPrint('Supabase Auth giriş başarılı: ${user.email}');
 
           // Profil bilgilerini kontrol et
-          try {
-            final profile = await supabase
-                .from('profiles')
-                .select()
-                .eq('id', user.id)
-                .maybeSingle();
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
 
-            if (profile == null) {
-              // Profil bulunamadı, yeni profil oluştur
-              await supabase.from('profiles').insert({
-                'id': user.id,
-                'ad': 'Kullanıcı',
-                'updated_at': DateTime.now().toIso8601String(),
-              });
-            }
+        if (profile == null) {
+          // Profil bulunamadı, yeni profil oluştur
+          await supabase.from('profiles').insert({
+            'id': user.id,
+            'ad': 'Kullanıcı',
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        }
 
-            if (!mounted) return;
+        if (!mounted) return;
 
-            ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Hoşgeldin ${profile?['ad'] ?? 'Kullanıcı'}'),
               ),
-            );
-
-            Navigator.pushReplacement(
-              context,
+        );
+        
+        Navigator.pushReplacement(
+          context, 
               MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+        );
             loginSuccessful = true;
             return;
-          } catch (e) {
-            debugPrint('Profil hatası: $e');
-            if (!mounted) return;
-
-            Navigator.pushReplacement(
-              context,
+      } catch (e) {
+        debugPrint('Profil hatası: $e');
+        if (!mounted) return;
+        
+        Navigator.pushReplacement(
+          context, 
               MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+        );
             loginSuccessful = true;
             return;
           }
@@ -177,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       debugPrint('Giriş hatası: $e');
       if (!mounted) return;
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Email veya şifre hatalı'),
@@ -241,20 +241,20 @@ class _LoginPageState extends State<LoginPage> {
                     : const Text('Giriş Yap', style: TextStyle(fontSize: 16)),
               ),
             ),
-            const SizedBox(height: 20),
-            TextButton(
+              const SizedBox(height: 20),
+              TextButton(
               onPressed: _isLoading
                   ? null
                   : () {
-                      Navigator.push(
-                        context,
+                  Navigator.push(
+                    context,
                         MaterialPageRoute(
                           builder: (context) => const RegisterPage(),
                         ),
-                      );
-                    },
-              child: const Text('Hesabın yok mu? Kayıt ol'),
-            ),
+                  );
+                },
+                child: const Text('Hesabın yok mu? Kayıt ol'),
+              ),
           ],
         ),
       ),

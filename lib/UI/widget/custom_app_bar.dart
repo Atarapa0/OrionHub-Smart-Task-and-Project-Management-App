@@ -244,7 +244,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       child: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+         automaticallyImplyLeading: false,
         toolbarHeight: 70,
         title: Row(
           children: [
@@ -360,6 +360,6 @@ class _CustomAppBarState extends State<CustomAppBar>
           ),
         ],
       ),
-    );
+      );
   }
 }

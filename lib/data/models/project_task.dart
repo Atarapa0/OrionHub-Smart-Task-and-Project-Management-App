@@ -188,3 +188,4 @@ class ProjectTask {
   // Geriye uyumluluk için
   bool get isDone => status == 'done';
 }
+ 

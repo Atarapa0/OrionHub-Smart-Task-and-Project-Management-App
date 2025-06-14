@@ -53,28 +53,28 @@ class _StartPageState extends State<StartPage> {
                         right: 0,
                         height: MediaQuery.of(context).size.height * 0.6,
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(30),
-                              topRight: Radius.circular(30),
-                            ),
-                          ),
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 120),
-                            child: Container(
-                              width: 200, // Resmin genişliğini ayarlayın
-                              height: 200, // Resmin yüksekliğini ayarlayın
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  50,
-                                ), // Köşeleri daha yuvarlak yapmak için değeri artırdık
-                                image: DecorationImage(
-                                  image: AssetImage('assets/image1.png'),
-                                  fit: BoxFit.cover,
-                                ),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
                               ),
                             ),
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 120),
+                              child: Container(
+                                width: 200, // Resmin genişliğini ayarlayın
+                                height: 200, // Resmin yüksekliğini ayarlayın
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                  50,
+                                ), // Köşeleri daha yuvarlak yapmak için değeri artırdık
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/image1.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
                           ),
                         ),
                       ),

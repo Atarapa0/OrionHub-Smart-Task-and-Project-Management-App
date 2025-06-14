@@ -3,13 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> initSupabase() async {
   await Supabase.initialize(
-    url: 'YOUR_SUPABASE_URL_HERE',
-    anonKey: 'YOUR_SUPABASE_ANON_KEY_HERE',
+    url: 'https://mrqzmcuyizajvwkcefpt.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ycXptY3V5aXphanZ3a2NlZnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MzE2NDEsImV4cCI6MjA2NDEwNzY0MX0.D6gchkwk9R6Renj4zR5vbZ0uv6vcPI5mi0lrgnxfZP0',
   );
 }
-
-// KULLANIM TALİMATI:
-// 1. Supabase projenizden URL ve Anon Key'i alın
-// 2. Yukarıdaki 'YOUR_SUPABASE_URL_HERE' ve 'YOUR_SUPABASE_ANON_KEY_HERE' 
-//    değerlerini gerçek değerlerle değiştirin
-// 3. Bu dosya .gitignore'da olduğu için değişiklikleriniz commit edilmeyecek

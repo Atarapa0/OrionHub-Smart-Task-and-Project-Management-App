@@ -16,7 +16,7 @@ Future<void> main() async {
     // Manuel giriş kontrolü
     final prefs = await SharedPreferences.getInstance();
     final isManuallyLoggedIn = prefs.getBool('isManuallyLoggedIn') ?? false;
-
+    
     runApp(MyApp(isFirstLaunch: isFirstLaunch, isLoggedIn: isManuallyLoggedIn));
   } catch (e) {
     debugPrint('Uygulama başlatılırken hata oluştu: $e');
