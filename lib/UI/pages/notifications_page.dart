@@ -10,6 +10,8 @@ import 'package:todo_list/data/models/project_task.dart';
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
+  static bool isCurrentlyActive = false;
+
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
@@ -30,6 +32,7 @@ class _NotificationsPageState extends State<NotificationsPage>
   @override
   void initState() {
     super.initState();
+    NotificationsPage.isCurrentlyActive = true;
     _tabController = TabController(length: 4, vsync: this);
     _taskService = TaskService(context);
     _loadData();
@@ -37,6 +40,7 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   @override
   void dispose() {
+    NotificationsPage.isCurrentlyActive = false;
     _tabController.dispose();
     super.dispose();
   }
@@ -300,29 +304,77 @@ class _NotificationsPageState extends State<NotificationsPage>
           // Tab Bar
           Container(
             color: Colors.white,
+            height: 100,
             child: TabBar(
               controller: _tabController,
               labelColor: Colors.blue.shade600,
               unselectedLabelColor: Colors.grey.shade600,
               indicatorColor: Colors.blue.shade600,
+              labelStyle: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              unselectedLabelStyle: const TextStyle(fontSize: 10),
               tabs: [
                 Tab(
-                  text:
-                      'Tümü (${_taskAssignments.length + _projectTasks.length + _personalTasks.length})',
-                  icon: const Icon(Icons.all_inbox),
+                  height: 90,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.all_inbox, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tümü\n(${_taskAssignments.length + _projectTasks.length + _personalTasks.length})',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
                 Tab(
-                  text:
-                      'Proje Bildirimleri (${_taskAssignments.length + _projectTasks.length})',
-                  icon: const Icon(Icons.folder_shared),
+                  height: 90,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.folder_shared, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Proje\nBildirimleri\n(${_taskAssignments.length + _projectTasks.length})',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
                 Tab(
-                  text: 'Kişisel Görevler (${_personalTasks.length})',
-                  icon: const Icon(Icons.assignment),
+                  height: 90,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.assignment, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Kişisel\nGörevler\n(${_personalTasks.length})',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
                 Tab(
-                  text: 'Davetler (${_invitations.length})',
-                  icon: const Icon(Icons.group_add),
+                  height: 90,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.group_add, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Davetler\n(${_invitations.length})',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

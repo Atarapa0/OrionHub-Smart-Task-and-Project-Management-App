@@ -39,6 +39,10 @@ dependencies:
   shared_preferences: ^2.5.3
   supabase_flutter: ^2.9.0
   crypto: ^3.0.3
+  flutter_local_notifications: ^17.2.3  # Local bildirimler
+  firebase_core: ^3.6.0                 # Firebase temel
+  firebase_messaging: ^15.1.3           # Push notifications
+  timezone: ^0.9.4                      # Timezone support
 
 dev_dependencies:
   flutter_test:

@@ -28,20 +28,25 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   Future<void> _loadUserProjects() async {
+    debugPrint('Kullanıcı projeleri yükleniyor...');
     setState(() => _isLoading = true);
 
     try {
       final projects = await _managementService.getUserProjects();
+      debugPrint('${projects.length} proje bulundu');
+
       if (mounted) {
         setState(() {
           _userProjects = projects;
           _isLoading = false;
         });
+        debugPrint('Projeler state\'e kaydedildi');
       }
     } catch (e) {
+      debugPrint('Projeler yüklenirken hata: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        if (context.mounted) {
+        if (mounted && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Projeler yüklenirken hata: $e')),
           );
@@ -175,7 +180,7 @@ class _ProjectPageState extends State<ProjectPage> {
     if (result != true || !mounted) return;
 
     if (titleController.text.isEmpty) {
-      if (context.mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Lütfen proje adını girin')),
         );
@@ -184,18 +189,51 @@ class _ProjectPageState extends State<ProjectPage> {
     }
 
     try {
-      // Mevcut kullanıcının email'ini al
-      final prefs = await SharedPreferences.getInstance();
-      final userEmail = prefs.getString('loggedInUserEmail');
+      // Mevcut kullanıcının email'ini al (retry mekanizması ile)
+      String? userEmail;
 
+      // İlk deneme
+      final prefs = await SharedPreferences.getInstance();
+      userEmail = prefs.getString('loggedInUserEmail');
+
+      // Eğer null ise biraz bekleyip tekrar dene (yeni kurulum için)
       if (userEmail == null) {
-        if (mounted && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Kullanıcı bilgisi bulunamadı')),
-          );
+        debugPrint(
+          'İlk denemede kullanıcı bilgisi bulunamadı, tekrar deneniyor...',
+        );
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // İkinci deneme
+        userEmail = prefs.getString('loggedInUserEmail');
+
+        if (userEmail == null) {
+          debugPrint('İkinci denemede de kullanıcı bilgisi bulunamadı');
+          if (mounted && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.',
+                ),
+                action: SnackBarAction(
+                  label: 'Giriş Yap',
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/login',
+                      (route) => false,
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+          return;
         }
-        return;
       }
+
+      debugPrint('Kullanıcı email bulundu: $userEmail');
+
+      debugPrint('Proje ekleniyor: ${titleController.text}');
 
       await _projectService.addProject(
         Project(
@@ -208,9 +246,15 @@ class _ProjectPageState extends State<ProjectPage> {
         ),
       );
 
+      debugPrint('Proje başarıyla eklendi, liste yenileniyor...');
+
       if (!mounted) return;
-      _loadUserProjects();
-      if (context.mounted) {
+
+      // Veritabanının güncellemesi için kısa delay
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      await _loadUserProjects();
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -230,13 +274,13 @@ class _ProjectPageState extends State<ProjectPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (context.mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(child: Text('Proje oluşturulurken hata: $e')),
               ],
             ),

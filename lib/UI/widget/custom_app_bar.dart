@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
-import 'package:todo_list/data/services/notification_service.dart';
+import 'package:todo_list/UI/pages/notifications_page.dart';
+import 'package:todo_list/data/services/notification_counter_service.dart';
+import 'package:todo_list/data/services/push_notification_service.dart';
+import 'package:todo_list/UI/widget/notification_badge.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
@@ -19,8 +22,10 @@ class _CustomAppBarState extends State<CustomAppBar>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   String _userName = '';
-  int _unreadNotificationCount = 0;
-  final NotificationService _notificationService = NotificationService();
+
+  final NotificationCounterService _counterService =
+      NotificationCounterService();
+  bool _isNavigatingToNotifications = false;
 
   @override
   void initState() {
@@ -34,6 +39,12 @@ class _CustomAppBarState extends State<CustomAppBar>
     );
     _loadUserName();
     _loadNotificationCount();
+
+    // Stream'i dinle (NotificationBadge widget'ı kendi sayacını yönetiyor)
+    _counterService.notificationCountStream.listen((count) {
+      // NotificationBadge widget'ı otomatik güncelleniyor
+      debugPrint('📊 Bildirim sayısı güncellendi: $count');
+    });
   }
 
   @override
@@ -58,12 +69,10 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   Future<void> _loadNotificationCount() async {
     try {
-      final count = await _notificationService.getUnreadNotificationCount();
-      if (mounted) {
-        setState(() {
-          _unreadNotificationCount = count;
-        });
-      }
+      await _counterService.loadUnreadCount();
+      debugPrint(
+        '📊 Bildirim sayısı yüklendi: ${_counterService.notificationCount}',
+      );
     } catch (e) {
       debugPrint('Bildirim sayısı yüklenirken hata: $e');
     }
@@ -187,26 +196,6 @@ class _CustomAppBarState extends State<CustomAppBar>
                   ),
                   const SizedBox(height: 20),
                   ListTile(
-                    leading: Icon(Icons.settings, color: Colors.blue.shade600),
-                    title: const Text('Ayarlar'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.help_outline,
-                      color: Colors.green.shade600,
-                    ),
-                    title: const Text('Yardım'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/help');
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
                     leading: Icon(Icons.logout, color: Colors.red.shade600),
                     title: const Text('Çıkış Yap'),
                     onTap: () {
@@ -244,45 +233,81 @@ class _CustomAppBarState extends State<CustomAppBar>
       child: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-         automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false,
         toolbarHeight: 70,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Image.asset(
-                'assets/OrionHub_appbar_logo.png',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        title: GestureDetector(
+          onTap: () {
+            // Mevcut route'u kontrol et
+            final currentRoute = ModalRoute.of(context)?.settings.name;
+
+            // Eğer zaten ana sayfadaysa hiçbir şey yapma
+            if (currentRoute == '/') {
+              return;
+            }
+
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/',
+              (Route<dynamic> route) => false,
+            );
+          },
+          onLongPress: () async {
+            // Test bildirimi gönder (gizli özellik)
+            await PushNotificationService.sendTestNotification();
+            _counterService.incrementNotificationCount();
+
+            if (mounted && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🔔 Test bildirimi gönderildi!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            child: Row(
               children: [
-                const Text(
-                  'OrionHub',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Image.asset(
+                    'assets/OrionHub_appbar_logo.png',
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
                   ),
                 ),
-                Text(
-                  'Görev Yöneticisi',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 12,
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'OrionHub',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Görev Yöneticisi',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
         actions: [
           // Bildirim butonu
@@ -293,46 +318,66 @@ class _CustomAppBarState extends State<CustomAppBar>
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: Stack(
-                children: [
-                  const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: _unreadNotificationCount > 0
-                        ? Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade500,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 12,
-                              minHeight: 12,
-                            ),
-                            child: Text(
-                              _unreadNotificationCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
+              icon: NotificationBadge(
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               onPressed: () async {
-                Navigator.pushNamed(context, '/notifications');
-                // Bildirimler sayfasına gidince sayıyı güncelle
-                await Future.delayed(const Duration(milliseconds: 500));
-                _loadNotificationCount();
+                // Static flag ile kontrol et
+                if (NotificationsPage.isCurrentlyActive) {
+                  debugPrint('NotificationsPage aktif, işlem iptal edildi');
+                  return;
+                }
+
+                // Eğer zaten navigasyon işlemi devam ediyorsa engelle
+                if (_isNavigatingToNotifications) {
+                  debugPrint(
+                    'Zaten navigasyon işlemi devam ediyor, işlem iptal edildi',
+                  );
+                  return;
+                }
+
+                // Mevcut route'u kontrol et
+                final currentRoute = ModalRoute.of(context)?.settings.name;
+                debugPrint('Bildirim butonuna basıldı - Route: $currentRoute');
+
+                // Eğer zaten bildirimler sayfasındaysa hiçbir şey yapma
+                if (currentRoute == '/notifications') {
+                  debugPrint(
+                    'Route kontrolü: Zaten bildirimler sayfasında, işlem iptal edildi',
+                  );
+                  return;
+                }
+
+                // Navigasyon flag'ini set et
+                setState(() {
+                  _isNavigatingToNotifications = true;
+                });
+
+                try {
+                  debugPrint('Bildirimler sayfasına gidiliyor...');
+
+                  // Bildirim sayacını sıfırla
+                  await _counterService.clearUnreadCount();
+
+                  if (mounted && context.mounted) {
+                    await Navigator.pushNamed(context, '/notifications');
+                  }
+
+                  // Bildirimler sayfasına gidince sayıyı güncelle
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  _loadNotificationCount();
+                } finally {
+                  // Flag'i temizle
+                  if (mounted) {
+                    setState(() {
+                      _isNavigatingToNotifications = false;
+                    });
+                  }
+                }
               },
             ),
           ),
@@ -360,6 +405,6 @@ class _CustomAppBarState extends State<CustomAppBar>
           ),
         ],
       ),
-      );
+    );
   }
 }

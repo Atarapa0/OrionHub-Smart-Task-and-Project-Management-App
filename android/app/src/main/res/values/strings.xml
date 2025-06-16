@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OrionHub</string>
+    <string name="default_notification_channel_id">orionhub_default</string>
+    <string name="default_notification_channel_name">OrionHub Bildirimler</string>
+    <string name="default_notification_channel_description">OrionHub genel bildirimleri</string>
+    
+    <string name="instant_notification_channel_id">orionhub_instant</string>
+    <string name="instant_notification_channel_name">OrionHub Anında Bildirimler</string>
+    <string name="instant_notification_channel_description">OrionHub anında bildirimleri</string>
+    
+    <string name="scheduled_notification_channel_id">orionhub_scheduled</string>
+    <string name="scheduled_notification_channel_name">OrionHub Zamanlanmış Bildirimler</string>
+    <string name="scheduled_notification_channel_description">OrionHub zamanlanmış bildirimleri</string>
+    
+    <string name="periodic_notification_channel_id">orionhub_periodic</string>
+    <string name="periodic_notification_channel_name">OrionHub Periyodik Bildirimler</string>
+    <string name="periodic_notification_channel_description">OrionHub periyodik bildirimleri</string>
+</resources> 

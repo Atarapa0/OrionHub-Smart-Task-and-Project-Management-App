@@ -28,6 +28,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   String? _userRole;
   String? _currentUserEmail;
   bool _isLoading = true;
+  bool _isAddingTask = false;
 
   @override
   void initState() {
@@ -296,9 +297,18 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             child: ElevatedButton.icon(
-              onPressed: _showAddTaskDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Yeni Görev Ekle'),
+              onPressed: _isAddingTask ? null : _showAddTaskDialog,
+              icon: _isAddingTask
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.add),
+              label: Text(_isAddingTask ? 'Ekleniyor...' : 'Yeni Görev Ekle'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,
@@ -1451,115 +1461,144 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () async {
-                                if (title.trim().isNotEmpty) {
-                                  final context = dialogContext;
+                              onPressed: _isAddingTask
+                                  ? null
+                                  : () async {
+                                      if (title.trim().isNotEmpty &&
+                                          !_isAddingTask) {
+                                        setState(() {
+                                          _isAddingTask = true;
+                                        });
+                                        final context = dialogContext;
 
-                                  // Tarih ve saat bilgilerini hazırla
-                                  String? dueTimeString;
-                                  if (selectedTime != null) {
-                                    dueTimeString =
-                                        '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
-                                  }
+                                        // Tarih ve saat bilgilerini hazırla
+                                        String? dueTimeString;
+                                        if (selectedTime != null) {
+                                          dueTimeString =
+                                              '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
+                                        }
 
-                                  final task = ProjectTask(
-                                    projectId: widget.project.id!,
-                                    title: title.trim(),
-                                    description: description.trim().isEmpty
-                                        ? null
-                                        : description.trim(),
-                                    priority: priority,
-                                    category: category.trim().isEmpty
-                                        ? null
-                                        : category.trim(),
-                                    assignedTo: assignedTo,
-                                    dueDate: selectedDate,
-                                    dueTime: dueTimeString,
-                                  );
+                                        final task = ProjectTask(
+                                          projectId: widget.project.id!,
+                                          title: title.trim(),
+                                          description:
+                                              description.trim().isEmpty
+                                              ? null
+                                              : description.trim(),
+                                          priority: priority,
+                                          category: category.trim().isEmpty
+                                              ? null
+                                              : category.trim(),
+                                          assignedTo: assignedTo,
+                                          dueDate: selectedDate,
+                                          dueTime: dueTimeString,
+                                        );
 
-                                  try {
-                                    final newTaskId = await _projectService
-                                        .addProjectTask(task);
-                                    if (!mounted) return;
-                                    await _loadProjectData();
+                                        try {
+                                          final newTaskId =
+                                              await _projectService
+                                                  .addProjectTask(task);
+                                          if (!mounted) return;
 
-                                    // Eğer birine atandıysa bildirim oluştur
-                                    if (assignedTo != null &&
-                                        newTaskId != null) {
-                                      // Atayan kişinin adını al
-                                      final assignerMember = _members
-                                          .firstWhere(
-                                            (m) =>
-                                                m.userEmail ==
-                                                _currentUserEmail,
-                                            orElse: () => ProjectMember(
-                                              projectId: widget.project.id!,
-                                              userEmail:
-                                                  _currentUserEmail ?? '',
-                                              userName: 'Bilinmeyen',
-                                              role: 'owner',
-                                            ),
+                                          // Real-time güncelleme: Yeni görevi listeye ekle
+                                          final newTask = task.copyWith(
+                                            id: newTaskId,
                                           );
+                                          setState(() {
+                                            _tasks.insert(0, newTask);
+                                            // İstatistikleri güncelle
+                                            _stats['totalTasks'] =
+                                                (_stats['totalTasks'] ?? 0) + 1;
+                                            _stats['pendingTasks'] =
+                                                (_stats['pendingTasks'] ?? 0) +
+                                                1;
+                                          });
 
-                                      debugPrint(
-                                        '🔔 Yeni görev için bildirim oluşturuluyor...',
-                                      );
-                                      await _notificationService
-                                          .createTaskAssignmentNotification(
-                                            assignedToEmail: assignedTo!,
-                                            taskTitle: task.title,
-                                            projectTitle: widget.project.title,
-                                            taskId: newTaskId,
-                                            projectId: widget.project.id!,
-                                            assignedByName:
-                                                assignerMember.userName,
+                                          // Eğer birine atandıysa bildirim oluştur
+                                          if (assignedTo != null &&
+                                              newTaskId != null) {
+                                            // Atayan kişinin adını al
+                                            final assignerMember = _members
+                                                .firstWhere(
+                                                  (m) =>
+                                                      m.userEmail ==
+                                                      _currentUserEmail,
+                                                  orElse: () => ProjectMember(
+                                                    projectId:
+                                                        widget.project.id!,
+                                                    userEmail:
+                                                        _currentUserEmail ?? '',
+                                                    userName: 'Bilinmeyen',
+                                                    role: 'owner',
+                                                  ),
+                                                );
+
+                                            debugPrint(
+                                              '🔔 Yeni görev için bildirim oluşturuluyor...',
+                                            );
+                                            await _notificationService
+                                                .createTaskAssignmentNotification(
+                                                  assignedToEmail: assignedTo!,
+                                                  taskTitle: task.title,
+                                                  projectTitle:
+                                                      widget.project.title,
+                                                  taskId: newTaskId,
+                                                  projectId: widget.project.id!,
+                                                  assignedByName:
+                                                      assignerMember.userName,
+                                                );
+                                          }
+
+                                          if (context.mounted) {
+                                            Navigator.of(context).pop();
+                                          }
+
+                                          // Başarı mesajı
+                                          if (mounted && context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  '${task.title} eklendi',
+                                                ),
+                                                backgroundColor: Colors.green,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          debugPrint(
+                                            '❌ Görev ekleme hatası: $e',
                                           );
-                                    }
-
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-
-                                    // Başarı mesajı
-                                    if (mounted && context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '${task.title} eklendi',
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    debugPrint('❌ Görev ekleme hatası: $e');
-                                    if (mounted && context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Hata: $e'),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                }
-                              },
+                                          if (mounted && context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Hata: $e'),
+                                                backgroundColor: Colors.red,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          setState(() {
+                                            _isAddingTask = false;
+                                          });
+                                        }
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue.shade600,
                                 foregroundColor: Colors.white,
@@ -1570,13 +1609,25 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: const Text(
-                                'Ekle',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: _isAddingTask
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Ekle',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -1711,7 +1762,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
                               if (mounted) {
                                 navigator.pop();
-                                await _loadProjectData();
+
+                                // Real-time güncelleme: Yeni üyeyi listeye ekle
+                                final newMember = ProjectMember(
+                                  projectId: widget.project.id!,
+                                  userEmail: user['email'],
+                                  userName: user['name'],
+                                  role: 'member',
+                                );
+
+                                setState(() {
+                                  _members.add(newMember);
+                                  _stats['totalMembers'] =
+                                      (_stats['totalMembers'] ?? 0) + 1;
+                                });
+
                                 if (mounted) {
                                   scaffoldMessenger.showSnackBar(
                                     SnackBar(
@@ -1820,7 +1885,17 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
                   if (mounted) {
                     navigator.pop();
-                    await _loadProjectData();
+
+                    // Real-time güncelleme: Görev atamasını güncelle
+                    setState(() {
+                      final index = _tasks.indexWhere((t) => t.id == task.id);
+                      if (index != -1) {
+                        _tasks[index] = _tasks[index].copyWith(
+                          assignedTo: selectedMember,
+                        );
+                      }
+                    });
+
                     if (mounted) {
                       scaffoldMessenger.showSnackBar(
                         const SnackBar(
@@ -1887,7 +1962,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                   );
                   if (mounted) {
                     navigator.pop();
-                    await _loadProjectData();
+
+                    // Real-time güncelleme: Üye rolünü güncelle
+                    setState(() {
+                      final index = _members.indexWhere(
+                        (m) => m.id == member.id,
+                      );
+                      if (index != -1) {
+                        _members[index] = _members[index].copyWith(
+                          role: selectedRole,
+                        );
+                      }
+                    });
+
                     if (mounted) {
                       scaffoldMessenger.showSnackBar(
                         const SnackBar(
@@ -1924,7 +2011,24 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
     try {
       await _projectService.updateTaskStatus(task.id!, newStatus);
       if (mounted) {
-        await _loadProjectData();
+        // Real-time güncelleme: Sadece ilgili görevi güncelle
+        setState(() {
+          final index = _tasks.indexWhere((t) => t.id == task.id);
+          if (index != -1) {
+            _tasks[index] = _tasks[index].copyWith(status: newStatus);
+
+            // İstatistikleri güncelle
+            if (task.isCompleted) {
+              // Tamamlanmış -> Bekleyen
+              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) - 1;
+              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) + 1;
+            } else {
+              // Bekleyen -> Tamamlanmış
+              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) - 1;
+              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) + 1;
+            }
+          }
+        });
       }
     } catch (e) {
       if (mounted && context.mounted) {
@@ -1967,8 +2071,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
       try {
         await _projectService.deleteProjectTask(task.id!);
-        await _loadProjectData();
         if (mounted) {
+          // Real-time güncelleme: Görevi listeden kaldır
+          setState(() {
+            _tasks.removeWhere((t) => t.id == task.id);
+            // İstatistikleri güncelle
+            _stats['totalTasks'] = (_stats['totalTasks'] ?? 0) - 1;
+            if (task.isCompleted) {
+              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) - 1;
+            } else {
+              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) - 1;
+            }
+          });
+
           scaffoldMessenger.showSnackBar(
             const SnackBar(
               content: Text('Görev silindi'),
@@ -2019,8 +2134,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
 
       try {
         await _projectService.removeMemberFromProject(member.id!);
-        await _loadProjectData();
         if (mounted) {
+          // Real-time güncelleme: Üyeyi listeden kaldır
+          setState(() {
+            _members.removeWhere((m) => m.id == member.id);
+            _stats['totalMembers'] = (_stats['totalMembers'] ?? 0) - 1;
+          });
+
           scaffoldMessenger.showSnackBar(
             const SnackBar(
               content: Text('Üye çıkarıldı'),

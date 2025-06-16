@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:todo_list/data/services/local_notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_list/data/models/notification.dart';
 
@@ -185,9 +186,52 @@ class NotificationService {
       });
 
       debugPrint('   ✅ Bildirim veritabanına kaydedildi!');
+
+      // Push notification gönder
+      await _sendPushNotification(
+        userEmail: userEmail,
+        title: title,
+        message: message,
+      );
     } catch (e) {
       debugPrint('❌ Bildirim oluşturulurken hata: $e');
       rethrow;
+    }
+  }
+
+  /// Push notification gönder
+  Future<void> _sendPushNotification({
+    required String userEmail,
+    required String title,
+    required String message,
+  }) async {
+    try {
+      debugPrint('📤 Push notification gönderiliyor...');
+      debugPrint('   - Alıcı: $userEmail');
+      debugPrint('   - Başlık: $title');
+
+      // FCM API kullanarak push notification gönder
+      // Bu kısım Firebase Functions veya backend API gerektirir
+      // Şimdilik local notification olarak gösterelim
+
+      // Eğer mevcut kullanıcıya gönderiliyorsa local notification göster
+      final currentEmail = await _getCurrentUserEmail();
+      if (currentEmail == userEmail) {
+        // Aynı kullanıcıya gönderiliyorsa local notification göster
+        await LocalNotificationService.showInstantNotification(
+          id: DateTime.now().millisecondsSinceEpoch,
+          title: title,
+          body: message,
+        );
+        debugPrint('   ✅ Local notification gösterildi');
+      } else {
+        debugPrint(
+          '   ℹ️ Farklı kullanıcıya gönderiliyor, push notification gerekli',
+        );
+        // Burada gerçek push notification API'si çağrılmalı
+      }
+    } catch (e) {
+      debugPrint('❌ Push notification gönderme hatası: $e');
     }
   }
 
@@ -237,20 +281,7 @@ class NotificationService {
       debugPrint('   - Atayan: $assignedByName');
       debugPrint('   - Görev ID: $taskId');
 
-      // Bu spesifik görev için zaten atama bildirimi var mı kontrol et
-      final existingNotification = await _supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_email', assignedToEmail)
-          .eq('type', 'task_assigned')
-          .eq('related_id', taskId)
-          .maybeSingle();
-
-      debugPrint(
-        '   - Mevcut bildirim kontrolü: ${existingNotification != null ? "VAR" : "YOK"}',
-      );
-
-      if (existingNotification == null) {
+      // Her görev atamasında yeni bildirim oluştur
         debugPrint('   ✅ Yeni bildirim oluşturuluyor...');
         await _createNotification(
           userEmail: assignedToEmail,
@@ -267,11 +298,6 @@ class NotificationService {
           },
         );
         debugPrint('   ✅ Bildirim başarıyla oluşturuldu!');
-      } else {
-        debugPrint(
-          '   ⚠️ Bu görev için zaten bildirim var (ID: ${existingNotification['id']}), atlanıyor',
-        );
-      }
     } catch (e) {
       debugPrint('❌ Görev atama bildirimi oluşturulurken hata: $e');
     }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:todo_list/firebase_options.dart';
 import 'package:todo_list/UI/router/initial_router.dart';
 import 'package:todo_list/core/config/supabase_config.dart';
 import 'package:todo_list/core/services/launch_service.dart';
@@ -6,21 +8,70 @@ import 'package:todo_list/UI/pages/start_page1.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
 import 'package:todo_list/UI/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:todo_list/data/services/push_notification_service.dart';
+import 'package:todo_list/data/services/local_notification_service.dart';
+import 'package:todo_list/data/services/notification_counter_service.dart';
 
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    await initSupabase();
-    final isFirstLaunch = await LaunchService.isFirstLaunch();
+    debugPrint('🚀 Uygulama başlatılıyor...');
 
-    // Manuel giriş kontrolü
+    // Firebase'i başlat (sadece henüz başlatılmamışsa)
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        debugPrint('🔥 Firebase başlatıldı');
+      } else {
+        debugPrint('🔥 Firebase zaten başlatılmış');
+      }
+    } catch (e) {
+      debugPrint('❌ Firebase başlatma hatası: $e');
+    }
+
+    // Supabase'i başlat
+    try {
+      await initSupabase();
+      debugPrint('✅ Supabase başlatıldı');
+    } catch (e) {
+      debugPrint('❌ Supabase başlatma hatası: $e');
+    }
+
+    // Notification servisleri başlat (hata olsa bile devam et)
+    try {
+      await PushNotificationService.initialize();
+      debugPrint('✅ Push notification service başlatıldı');
+    } catch (e) {
+      debugPrint('❌ Push notification service hatası: $e');
+    }
+
+    try {
+      await LocalNotificationService.initialize();
+      debugPrint('✅ Local notification service başlatıldı');
+    } catch (e) {
+      debugPrint('❌ Local notification service hatası: $e');
+    }
+
+    try {
+      await NotificationCounterService().loadUnreadCount();
+      debugPrint('✅ Notification counter service başlatıldı');
+    } catch (e) {
+      debugPrint('❌ Notification counter service hatası: $e');
+    }
+
+    // Launch service ve SharedPreferences
+    final isFirstLaunch = await LaunchService.isFirstLaunch();
     final prefs = await SharedPreferences.getInstance();
     final isManuallyLoggedIn = prefs.getBool('isManuallyLoggedIn') ?? false;
-    
+
+    debugPrint('📱 Uygulama başlatma tamamlandı');
     runApp(MyApp(isFirstLaunch: isFirstLaunch, isLoggedIn: isManuallyLoggedIn));
   } catch (e) {
-    debugPrint('Uygulama başlatılırken hata oluştu: $e');
-    rethrow;
+    debugPrint('❌ Kritik hata: $e');
+    // Hata olsa bile basit bir uygulama başlat
+    runApp(const MyApp(isFirstLaunch: true, isLoggedIn: false));
   }
 }
 

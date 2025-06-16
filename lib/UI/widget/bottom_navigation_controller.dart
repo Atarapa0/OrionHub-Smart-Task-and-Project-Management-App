@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:todo_list/UI/pages/home_page.dart';
-import 'package:todo_list/UI/pages/profile_page.dart';
-import 'package:todo_list/UI/pages/project_page.dart';
 
 class BottomNavigationController extends StatefulWidget {
   final int? initialIndex;
@@ -24,49 +21,32 @@ class _BottomNavigationControllerState
   }
 
   void _onItemTapped(int index) {
-    if (_currentIndex == index) return; // Aynı sayfadaysa hiçbir şey yapma
+    // Aynı sayfadaysa hiçbir şey yapma
+    if (_currentIndex == index) {
+      return;
+    }
 
     setState(() {
       _currentIndex = index;
     });
 
-    Widget targetPage;
+    // Route adları ile navigasyon yap (daha tutarlı)
+    String routeName;
     switch (index) {
       case 0:
-        targetPage = const HomePage();
+        routeName = '/home'; // Ana sayfa için özel route
         break;
       case 1:
-        targetPage = const ProjectPage();
+        routeName = '/projects';
         break;
       case 2:
-        targetPage = const ProfilePage();
+        routeName = '/profile';
         break;
       default:
         return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 0.1);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
+    Navigator.pushReplacementNamed(context, routeName);
   }
 
   @override

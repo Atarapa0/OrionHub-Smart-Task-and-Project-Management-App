@@ -6,12 +6,16 @@ import 'package:todo_list/UI/pages/start_page1.dart';
 import 'package:todo_list/UI/pages/notifications_page.dart';
 import 'package:todo_list/UI/pages/settings_page.dart';
 import 'package:todo_list/UI/pages/help_page.dart';
+import 'package:todo_list/UI/pages/profile_page.dart';
+import 'package:todo_list/UI/pages/project_page.dart';
 import 'package:todo_list/data/models/project.dart';
 
 class InitialRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
+        return MaterialPageRoute(builder: (_) => const HomePage());
+      case '/home':
         return MaterialPageRoute(builder: (_) => const HomePage());
       case '/login':
         return MaterialPageRoute(builder: (_) => const LoginPage());
@@ -28,6 +32,10 @@ class InitialRouter {
         return MaterialPageRoute(builder: (_) => const SettingsPage());
       case '/help':
         return MaterialPageRoute(builder: (_) => const HelpPage());
+      case '/projects':
+        return MaterialPageRoute(builder: (_) => const ProjectPage());
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const ProfilePage());
       default:
         return MaterialPageRoute(
           builder: (_) =>
