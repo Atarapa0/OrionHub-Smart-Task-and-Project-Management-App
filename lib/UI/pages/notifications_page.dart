@@ -304,74 +304,82 @@ class _NotificationsPageState extends State<NotificationsPage>
           // Tab Bar
           Container(
             color: Colors.white,
-            height: 100,
             child: TabBar(
               controller: _tabController,
               labelColor: Colors.blue.shade600,
               unselectedLabelColor: Colors.grey.shade600,
               indicatorColor: Colors.blue.shade600,
               labelStyle: const TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
-              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              unselectedLabelStyle: const TextStyle(fontSize: 9),
+              isScrollable: false,
               tabs: [
                 Tab(
-                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.all_inbox, size: 22),
-                      const SizedBox(height: 4),
+                      const Icon(Icons.all_inbox, size: 18),
+                      const SizedBox(height: 2),
                       Text(
-                        'Tümü\n(${_taskAssignments.length + _projectTasks.length + _personalTasks.length})',
+                        'Tümü (${_taskAssignments.length + _projectTasks.length + _personalTasks.length})',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 9),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Tab(
-                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.folder_shared, size: 22),
-                      const SizedBox(height: 4),
+                      const Icon(Icons.folder_shared, size: 18),
+                      const SizedBox(height: 2),
                       Text(
-                        'Proje\nBildirimleri\n(${_taskAssignments.length + _projectTasks.length})',
+                        'Proje (${_taskAssignments.length + _projectTasks.length})',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 9),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Tab(
-                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.assignment, size: 22),
-                      const SizedBox(height: 4),
+                      const Icon(Icons.assignment, size: 18),
+                      const SizedBox(height: 2),
                       Text(
-                        'Kişisel\nGörevler\n(${_personalTasks.length})',
+                        'Kişisel (${_personalTasks.length})',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 9),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Tab(
-                  height: 90,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.group_add, size: 22),
-                      const SizedBox(height: 4),
+                      const Icon(Icons.group_add, size: 18),
+                      const SizedBox(height: 2),
                       Text(
-                        'Davetler\n(${_invitations.length})',
+                        'Davetler (${_invitations.length})',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 9),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

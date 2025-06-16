@@ -30,16 +30,21 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   bool _isLoading = true;
   bool _isAddingTask = false;
 
+  // İstatistiklerin anlık güncellenmesi için ValueNotifier
+  late ValueNotifier<Map<String, dynamic>> _statsNotifier;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _statsNotifier = ValueNotifier<Map<String, dynamic>>({});
     _loadProjectData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _statsNotifier.dispose();
     super.dispose();
   }
 
@@ -69,6 +74,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           _invitations = results[4] as List<Map<String, dynamic>>;
           _isLoading = false;
         });
+
+        // İstatistikleri güncelle
+        _updateStats();
       }
     } catch (e) {
       debugPrint('Veri yükleme hatası: $e');
@@ -86,6 +94,28 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
   }
 
   bool get _canManageMembers => _userRole == 'owner' || _userRole == 'admin';
+
+  // İstatistikleri hesapla ve güncelle
+  void _updateStats() {
+    final totalTasks = _tasks.length;
+    final completedTasks = _tasks.where((task) => task.isCompleted).length;
+    final pendingTasks = totalTasks - completedTasks;
+    final totalMembers = _members.length;
+    final completionRate = totalTasks > 0
+        ? ((completedTasks / totalTasks) * 100).round()
+        : 0;
+
+    final newStats = {
+      'total_tasks': totalTasks,
+      'completed_tasks': completedTasks,
+      'pending_tasks': pendingTasks,
+      'total_members': totalMembers,
+      'completion_rate': completionRate,
+    };
+
+    _stats = newStats;
+    _statsNotifier.value = newStats;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,27 +226,32 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                         ],
                       ),
                       const SizedBox(height: 20),
-                      // İstatistik Kartları
-                      Row(
-                        children: [
-                          _buildStatCard(
-                            'Görevler',
-                            '${_stats['completed_tasks'] ?? 0}/${_stats['total_tasks'] ?? 0}',
-                            Icons.task_alt,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'Üyeler',
-                            '${_stats['total_members'] ?? 0}',
-                            Icons.people,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'Tamamlanma',
-                            '%${_stats['completion_rate'] ?? 0}',
-                            Icons.trending_up,
-                          ),
-                        ],
+                      // İstatistik Kartları (Anlık Güncellenen)
+                      ValueListenableBuilder<Map<String, dynamic>>(
+                        valueListenable: _statsNotifier,
+                        builder: (context, stats, child) {
+                          return Row(
+                            children: [
+                              _buildStatCard(
+                                'Görevler',
+                                '${stats['completed_tasks'] ?? 0}/${stats['total_tasks'] ?? 0}',
+                                Icons.task_alt,
+                              ),
+                              const SizedBox(width: 12),
+                              _buildStatCard(
+                                'Üyeler',
+                                '${stats['total_members'] ?? 0}',
+                                Icons.people,
+                              ),
+                              const SizedBox(width: 12),
+                              _buildStatCard(
+                                'Tamamlanma',
+                                '%${stats['completion_rate'] ?? 0}',
+                                Icons.trending_up,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -1302,23 +1337,27 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       ),
                       const SizedBox(height: 16),
 
-                      // Atanan Kişi
+                      // Atanan Kişi (Zorunlu)
                       DropdownButtonFormField<String>(
                         value: assignedTo,
                         decoration: InputDecoration(
-                          labelText: 'Atanan Kişi',
+                          labelText: 'Atanan Kişi *',
                           prefixIcon: const Icon(Icons.person_add),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: assignedTo == null
+                                  ? Colors.red
+                                  : Colors.grey.shade400,
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
+                          errorText: assignedTo == null
+                              ? 'Lütfen bir kişi seçin'
+                              : null,
                         ),
                         items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Atanmamış'),
-                          ),
                           ..._members.map(
                             (member) => DropdownMenuItem(
                               value: member.userEmail,
@@ -1328,6 +1367,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                         ],
                         onChanged: (value) =>
                             setDialogState(() => assignedTo = value),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Lütfen bir kişi seçin';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -1461,10 +1506,14 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: _isAddingTask
+                              onPressed:
+                                  _isAddingTask ||
+                                      title.trim().isEmpty ||
+                                      assignedTo == null
                                   ? null
                                   : () async {
                                       if (title.trim().isNotEmpty &&
+                                          assignedTo != null &&
                                           !_isAddingTask) {
                                         setState(() {
                                           _isAddingTask = true;
@@ -1506,13 +1555,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                           );
                                           setState(() {
                                             _tasks.insert(0, newTask);
-                                            // İstatistikleri güncelle
-                                            _stats['totalTasks'] =
-                                                (_stats['totalTasks'] ?? 0) + 1;
-                                            _stats['pendingTasks'] =
-                                                (_stats['pendingTasks'] ?? 0) +
-                                                1;
                                           });
+
+                                          // İstatistikleri yeniden hesapla ve güncelle
+                                          _updateStats();
 
                                           // Eğer birine atandıysa bildirim oluştur
                                           if (assignedTo != null &&
@@ -1621,9 +1667,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                             ),
                                       ),
                                     )
-                                  : const Text(
-                                      'Ekle',
-                                      style: TextStyle(
+                                  : Text(
+                                      (title.trim().isEmpty ||
+                                              assignedTo == null)
+                                          ? 'Başlık ve Atanan Kişi Gerekli'
+                                          : 'Ekle',
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -2016,19 +2065,11 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           final index = _tasks.indexWhere((t) => t.id == task.id);
           if (index != -1) {
             _tasks[index] = _tasks[index].copyWith(status: newStatus);
-
-            // İstatistikleri güncelle
-            if (task.isCompleted) {
-              // Tamamlanmış -> Bekleyen
-              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) - 1;
-              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) + 1;
-            } else {
-              // Bekleyen -> Tamamlanmış
-              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) - 1;
-              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) + 1;
-            }
           }
         });
+
+        // İstatistikleri yeniden hesapla ve güncelle
+        _updateStats();
       }
     } catch (e) {
       if (mounted && context.mounted) {
@@ -2075,14 +2116,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           // Real-time güncelleme: Görevi listeden kaldır
           setState(() {
             _tasks.removeWhere((t) => t.id == task.id);
-            // İstatistikleri güncelle
-            _stats['totalTasks'] = (_stats['totalTasks'] ?? 0) - 1;
-            if (task.isCompleted) {
-              _stats['completedTasks'] = (_stats['completedTasks'] ?? 0) - 1;
-            } else {
-              _stats['pendingTasks'] = (_stats['pendingTasks'] ?? 0) - 1;
-            }
           });
+
+          // İstatistikleri yeniden hesapla ve güncelle
+          _updateStats();
 
           scaffoldMessenger.showSnackBar(
             const SnackBar(
@@ -2138,8 +2175,10 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
           // Real-time güncelleme: Üyeyi listeden kaldır
           setState(() {
             _members.removeWhere((m) => m.id == member.id);
-            _stats['totalMembers'] = (_stats['totalMembers'] ?? 0) - 1;
           });
+
+          // İstatistikleri yeniden hesapla ve güncelle
+          _updateStats();
 
           scaffoldMessenger.showSnackBar(
             const SnackBar(

@@ -37,13 +37,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
     _loadUserName();
     _loadNotificationCount();
 
     // Stream'i dinle (NotificationBadge widget'ı kendi sayacını yönetiyor)
     _counterService.notificationCountStream.listen((count) {
       // NotificationBadge widget'ı otomatik güncelleniyor
-      debugPrint('📊 Bildirim sayısı güncellendi: $count');
+      debugPrint('🔔 Bildirim sayısı güncellendi: $count');
     });
   }
 
@@ -237,14 +238,28 @@ class _CustomAppBarState extends State<CustomAppBar>
         toolbarHeight: 70,
         title: GestureDetector(
           onTap: () {
-            // Mevcut route'u kontrol et
-            final currentRoute = ModalRoute.of(context)?.settings.name;
+            // Mevcut widget'ı kontrol et - HomePage'de miyiz?
+            final currentWidget = context.widget;
+            debugPrint(
+              'Logo tıklandı - Widget türü: ${currentWidget.runtimeType}',
+            );
 
-            // Eğer zaten ana sayfadaysa hiçbir şey yapma
-            if (currentRoute == '/') {
+            // Eğer mevcut sayfa HomePage ise hiçbir şey yapma
+            bool isOnHomePage = false;
+            context.visitAncestorElements((element) {
+              if (element.widget.runtimeType.toString().contains('HomePage')) {
+                isOnHomePage = true;
+                return false; // Aramayı durdur
+              }
+              return true; // Aramaya devam et
+            });
+
+            if (isOnHomePage) {
+              debugPrint('Zaten HomePage\'de, işlem iptal edildi');
               return;
             }
 
+            debugPrint('Ana sayfaya yönlendiriliyor...');
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/',

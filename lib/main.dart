@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:todo_list/firebase_options.dart';
+
 import 'package:todo_list/UI/router/initial_router.dart';
 import 'package:todo_list/core/config/supabase_config.dart';
 import 'package:todo_list/core/services/launch_service.dart';
@@ -8,7 +7,6 @@ import 'package:todo_list/UI/pages/start_page1.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
 import 'package:todo_list/UI/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:todo_list/data/services/push_notification_service.dart';
 import 'package:todo_list/data/services/local_notification_service.dart';
 import 'package:todo_list/data/services/notification_counter_service.dart';
 
@@ -17,19 +15,8 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('🚀 Uygulama başlatılıyor...');
 
-    // Firebase'i başlat (sadece henüz başlatılmamışsa)
-    try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        debugPrint('🔥 Firebase başlatıldı');
-      } else {
-        debugPrint('🔥 Firebase zaten başlatılmış');
-      }
-    } catch (e) {
-      debugPrint('❌ Firebase başlatma hatası: $e');
-    }
+    // Firebase'i başlat (geçici olarak devre dışı)
+    debugPrint('⚠️ Firebase geçici olarak devre dışı bırakıldı');
 
     // Supabase'i başlat
     try {
@@ -39,13 +26,10 @@ Future<void> main() async {
       debugPrint('❌ Supabase başlatma hatası: $e');
     }
 
-    // Notification servisleri başlat (hata olsa bile devam et)
-    try {
-      await PushNotificationService.initialize();
-      debugPrint('✅ Push notification service başlatıldı');
-    } catch (e) {
-      debugPrint('❌ Push notification service hatası: $e');
-    }
+    // Push notification service (geçici olarak devre dışı)
+    debugPrint(
+      '⚠️ Push notification service geçici olarak devre dışı bırakıldı',
+    );
 
     try {
       await LocalNotificationService.initialize();
