@@ -382,7 +382,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-        return AlertDialog(
+            return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -400,8 +400,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 child: SingleChildScrollView(
                   child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Row(
                         children: [
                           Container(
@@ -445,7 +445,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
 
                       // Açıklama
-              TextField(
+                      TextField(
                         decoration: InputDecoration(
                           labelText: 'Açıklama (İsteğe bağlı)',
                           prefixIcon: const Icon(Icons.description),
@@ -487,18 +487,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             child: Text('Acil'),
                           ),
                         ],
-                onChanged: (value) {
+                        onChanged: (value) {
                           if (value != null) {
                             setDialogState(() {
                               priority = value;
                             });
                           }
-                },
-              ),
+                        },
+                      ),
                       const SizedBox(height: 16),
 
                       // Kategori
-              TextField(
+                      TextField(
                         decoration: InputDecoration(
                           labelText: 'Kategori (İsteğe bağlı)',
                           prefixIcon: const Icon(Icons.category),
@@ -559,10 +559,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       selectedDate = null;
                                       selectedTime = null;
                                     });
-                },
-              ),
-            ],
-          ),
+                                  },
+                                ),
+                            ],
+                          ),
                         ),
                       ),
 
@@ -606,7 +606,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 if (selectedTime != null)
                                   IconButton(
                                     icon: const Icon(Icons.clear, size: 20),
-              onPressed: () {
+                                    onPressed: () {
                                       setDialogState(() {
                                         selectedTime = null;
                                       });
@@ -636,15 +636,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               child: const Text(
                                 'İptal',
                                 style: TextStyle(fontSize: 16),
-            ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-              onPressed: () async {
-                if (title.trim().isNotEmpty) {
-                  final context = dialogContext;
+                              onPressed: () async {
+                                if (title.trim().isNotEmpty) {
+                                  final context = dialogContext;
 
                                   // Tarih ve saat bilgilerini hazırla
                                   String? dueTimeString;
@@ -668,15 +668,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   );
 
                                   try {
-                  await _taskService.insertTask(newTask);
-                  if (!mounted) return;
+                                    await _taskService.insertTask(newTask);
+                                    if (!mounted) return;
                                     _refreshTasks();
                                     if (context.mounted) {
                                       Navigator.of(context).pop();
-                }
+                                    }
 
                                     // Başarı mesajı
-                                    if (mounted) {
+                                    if (mounted && context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -695,7 +695,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       );
                                     }
                                   } catch (e) {
-                                    if (mounted) {
+                                    if (mounted && context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -732,8 +732,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
-            ),
-          ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -755,7 +755,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _refreshTasks();
     } catch (e) {
       debugPrint('Görev durum güncelleme hatası: $e');
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Görev durumu güncellenirken hata oluştu: $e'),
@@ -777,13 +777,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       );
       debugPrint('Task başlığı: ${task.title}');
 
-    await _taskService.deleteTask(task.id!);
+      await _taskService.deleteTask(task.id!);
 
       debugPrint('Görev başarıyla silindi, liste yenileniyor...');
       _refreshTasks();
     } catch (e) {
       debugPrint('Görev silme hatası: $e');
-      if (mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Görev silinirken hata oluştu: $e'),
@@ -831,7 +831,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha(13),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1130,7 +1130,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Colors.blue.withAlpha(77),
                             blurRadius: 15,
                             offset: const Offset(0, 5),
                           ),
@@ -1141,7 +1141,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withAlpha(51),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
@@ -1154,10 +1154,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
                                   _hasActiveFilters()
                                       ? 'Filtrelenmiş Görevler'
                                       : 'Bugünkü İlerlemeniz',
@@ -1171,7 +1171,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 Text(
                                   '$completedTasks / $totalTasks görev tamamlandı',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withAlpha(230),
                                     fontSize: 14,
                                   ),
                                 ),
@@ -1179,8 +1179,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Filtre uygulandı',
-              style: TextStyle(
-                                      color: Colors.white.withOpacity(0.8),
+                                    style: TextStyle(
+                                      color: Colors.white.withAlpha(204),
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic,
                                     ),
@@ -1191,9 +1191,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   value: totalTasks > 0
                                       ? completedTasks / totalTasks
                                       : 0,
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.3,
-                                  ),
+                                  backgroundColor: Colors.white.withAlpha(77),
                                   valueColor:
                                       const AlwaysStoppedAnimation<Color>(
                                         Colors.white,
@@ -1214,9 +1212,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   value: totalTasks > 0
                                       ? completedTasks / totalTasks
                                       : 0,
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.3,
-                                  ),
+                                  backgroundColor: Colors.white.withAlpha(77),
                                   valueColor:
                                       const AlwaysStoppedAnimation<Color>(
                                         Colors.white,
@@ -1231,7 +1227,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -1249,10 +1245,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 children: [
                   Icon(Icons.task_alt, color: Colors.grey.shade700, size: 24),
                   const SizedBox(width: 8),
-            Text(
+                  Text(
                     'Görevleriniz',
-              style: TextStyle(
-                fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade800,
                     ),
@@ -1269,7 +1265,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         color: Colors.blue.shade100,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blue.shade300),
-            ),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1367,14 +1363,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ],
 
               // Görevler Listesi
-            Expanded(
-              child: FutureBuilder<List<Task>>(
+              Expanded(
+                child: FutureBuilder<List<Task>>(
                   key: ValueKey('tasks_${_futureBuilderKey.toString()}'),
                   future: _tasksFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1402,7 +1398,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ],
                         ),
                       );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1430,21 +1426,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ],
                         ),
                       );
-                  } else {
-                    final tasks = snapshot.data!;
-                    return ListView.builder(
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) {
+                    } else {
+                      final tasks = snapshot.data!;
+                      return ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
                           return _buildTaskItem(tasks[index], index);
-                      },
-                    );
-                  }
-                },
+                        },
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddTaskDialog,
@@ -1457,6 +1453,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
       bottomNavigationBar: const BottomNavigationController(initialIndex: 0),
-     );
+    );
   }
 }

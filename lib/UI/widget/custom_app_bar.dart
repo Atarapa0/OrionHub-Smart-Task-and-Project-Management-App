@@ -235,7 +235,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha(26),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -289,7 +289,7 @@ class _CustomAppBarState extends State<CustomAppBar>
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
@@ -345,7 +345,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 onTap: () => _showUserMenu(context),
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withAlpha(51),
                   child: Text(
                     _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
                     style: const TextStyle(
