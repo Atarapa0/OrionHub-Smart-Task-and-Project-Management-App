@@ -33,9 +33,9 @@ class TaskService {
     if (isManuallyLoggedIn) {
       final email = prefs.getString('loggedInUserEmail');
       if (email != null) {
-        // Email'den profiles tablosundan ID'yi al (auth.users ile eşleşen)
+        // Email'den user_profiles tablosundan ID'yi al
         final profile = await _client
-            .from('profiles')
+            .from('user_profiles')
             .select('id')
             .eq('email', email)
             .maybeSingle();
