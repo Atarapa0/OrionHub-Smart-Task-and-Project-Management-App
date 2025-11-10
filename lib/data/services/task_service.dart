@@ -19,22 +19,30 @@ class TaskService {
 
   // Kullanıcı ID'sini al (manuel sistem)
   Future<String?> _getCurrentUserId() async {
+    // Önce auth.uid() kontrol et
+    final authUser = _client.auth.currentUser;
+    if (authUser != null) {
+      debugPrint('Auth kullanıcısı bulundu: ${authUser.id}');
+      return authUser.id;
+    }
+
+    // Manuel giriş kontrolü
     final prefs = await SharedPreferences.getInstance();
     final isManuallyLoggedIn = prefs.getBool('isManuallyLoggedIn') ?? false;
 
     if (isManuallyLoggedIn) {
       final email = prefs.getString('loggedInUserEmail');
       if (email != null) {
-        // Email'den user_profiles tablosundan ID'yi al
-        final userProfile = await _client
-            .from('user_profiles')
+        // Email'den profiles tablosundan ID'yi al (auth.users ile eşleşen)
+        final profile = await _client
+            .from('profiles')
             .select('id')
             .eq('email', email)
             .maybeSingle();
 
-        if (userProfile != null) {
-          debugPrint('Manuel giriş kullanıcısı bulundu: ${userProfile['id']}');
-          return userProfile['id'];
+        if (profile != null) {
+          debugPrint('Manuel giriş kullanıcısı bulundu: ${profile['id']}');
+          return profile['id'];
         }
       }
     }

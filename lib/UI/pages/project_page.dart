@@ -93,12 +93,14 @@ class _ProjectPageState extends State<ProjectPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Text(
-                    'Yeni Proje Oluştur',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  const Expanded(
+                    child: Text(
+                      'Yeni Proje Oluştur',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                 ],
@@ -537,11 +539,20 @@ class _ProjectPageState extends State<ProjectPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDate(project['created_at']),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _formatDate(project['created_at']),
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

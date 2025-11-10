@@ -96,6 +96,9 @@ class ProjectService {
 
       debugPrint('Proje başarıyla oluşturuldu: ${result['id']}');
 
+      // NOT: project_members'a ekleme veritabanı trigger'ı tarafından otomatik yapılıyor
+      // Eğer trigger yoksa, aşağıdaki kodu kullanın:
+      
       // Proje üyeliği var mı kontrol et
       final existingMember = await supabase
           .from('project_members')
@@ -116,7 +119,7 @@ class ProjectService {
 
         debugPrint('Proje üyeliği oluşturuldu');
       } else {
-        debugPrint('Proje üyeliği zaten mevcut');
+        debugPrint('Proje üyeliği zaten mevcut (trigger tarafından oluşturulmuş olabilir)');
       }
     } catch (e) {
       debugPrint('Proje oluşturma hatası: $e');
