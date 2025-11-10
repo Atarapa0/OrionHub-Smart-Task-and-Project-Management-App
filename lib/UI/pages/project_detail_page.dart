@@ -1244,7 +1244,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                           ),
                           const SizedBox(width: 16),
                           const Text(
-                            'Yeni Proje Görevi Ekle',
+                            'Yeni Proje Görevi',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,

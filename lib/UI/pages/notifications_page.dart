@@ -284,7 +284,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                         icon: const Icon(Icons.done_all, color: Colors.white),
                         label: const Text(
                           'Tümünü Okundu İşaretle',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.white,fontSize: 10),
                         ),
                       ),
                   ],

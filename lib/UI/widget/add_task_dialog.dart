@@ -36,11 +36,14 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogPadding = screenWidth < 400 ? 16.0 : 24.0;
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(dialogPadding),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -326,7 +329,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? color.withAlpha(51) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
@@ -340,6 +343,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           style: TextStyle(
             color: isSelected ? color : Colors.grey.shade700,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
           ),
         ),
       ),
