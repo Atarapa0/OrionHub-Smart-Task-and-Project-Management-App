@@ -571,52 +571,6 @@ class ProjectManagementService {
     }
   }
 
-  // Proje görev bildirimi oluştur
-  Future<void> createProjectTaskNotification({
-    required String userEmail,
-    required String taskTitle,
-    required String projectTitle,
-    required String taskId,
-    required String projectId,
-    required String notificationType, // 'task_assigned' veya 'task_due_soon'
-    String? assignedBy,
-    DateTime? dueDateTime,
-  }) async {
-    try {
-      String title;
-      String message;
-
-      if (notificationType == 'task_assigned') {
-        title = 'Yeni Proje Görevi Atandı';
-        message =
-            '$assignedBy tarafından "$projectTitle" projesinde size "$taskTitle" görevi atandı.';
-      } else if (notificationType == 'task_due_soon') {
-        title = 'Proje Görevi Son Gün';
-        message =
-            '"$projectTitle" projesindeki "$taskTitle" görevinizin son günü!';
-      } else {
-        return;
-      }
-
-      await _supabase.from('notifications').insert({
-        'user_email': userEmail,
-        'title': title,
-        'message': message,
-        'type': notificationType,
-        'related_id': taskId,
-        'action_data': {
-          'project_id': projectId,
-          'project_title': projectTitle,
-          'task_title': taskTitle,
-          'assigned_by': assignedBy,
-          'due_datetime': dueDateTime?.toIso8601String(),
-        },
-      });
-    } catch (e) {
-      debugPrint('Proje görev bildirimi oluşturma hatası: $e');
-    }
-  }
-
   // Kullanıcının proje görevlerini bildirimler için getir
   Future<List<ProjectTask>> getUserProjectTasks() async {
     try {
@@ -672,11 +626,11 @@ class ProjectManagementService {
             .from('project_invitations')
             .delete()
             .eq('project_id', projectId),
-        // Proje bildirimlerini sil
+        // Proje bildirimlerini sil - JSON alanında arama
         _supabase
             .from('notifications')
             .delete()
-            .eq('action_data->project_id', projectId),
+            .eq('action_data->>project_id', projectId),
       ]);
 
       // Son olarak projeyi sil
@@ -689,4 +643,3 @@ class ProjectManagementService {
     }
   }
 }
- 

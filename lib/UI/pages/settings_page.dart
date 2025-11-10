@@ -164,25 +164,27 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(Icons.settings, color: Colors.white, size: 28),
                       SizedBox(width: 12),
-                      Text(
-                        'Ayarlar',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Ayarlar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Hesap ayarlarınızı yönetin',
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
@@ -204,26 +206,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.lock_reset,
-                              color: Colors.blue.shade700,
-                              size: 24,
+                          Flexible(
+                            child: SizedBox(
+                              child: Icon(
+                                Icons.lock_reset,
+                                color: Color.fromARGB(255, 33, 150, 243),
+                                size: 24,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Text(
-                            'Şifre Değiştir',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'Şifre Değiştir',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],

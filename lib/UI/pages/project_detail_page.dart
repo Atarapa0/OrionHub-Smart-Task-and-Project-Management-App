@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_list/UI/widget/bottom_navigation_controller.dart';
 import 'package:todo_list/data/models/project.dart';
 import 'package:todo_list/data/models/project_member.dart';
@@ -1579,20 +1580,34 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                                                   ),
                                                 );
 
-                                            debugPrint(
-                                              '🔔 Yeni görev için bildirim oluşturuluyor...',
-                                            );
-                                            await _notificationService
-                                                .createTaskAssignmentNotification(
-                                                  assignedToEmail: assignedTo!,
-                                                  taskTitle: task.title,
-                                                  projectTitle:
-                                                      widget.project.title,
-                                                  taskId: newTaskId,
-                                                  projectId: widget.project.id!,
-                                                  assignedByName:
-                                                      assignerMember.userName,
-                                                );
+                                            // Sadece farklı kullanıcıya atanmışsa bildirim oluştur
+                                            final prefs =
+                                                await SharedPreferences.getInstance();
+                                            final currentUserEmail = prefs
+                                                .getString('loggedInUserEmail');
+                                            if (assignedTo !=
+                                                currentUserEmail) {
+                                              debugPrint(
+                                                '🔔 Yeni görev için bildirim oluşturuluyor...',
+                                              );
+                                              await _notificationService
+                                                  .createTaskAssignmentNotification(
+                                                    assignedToEmail:
+                                                        assignedTo!,
+                                                    taskTitle: task.title,
+                                                    projectTitle:
+                                                        widget.project.title,
+                                                    taskId: newTaskId,
+                                                    projectId:
+                                                        widget.project.id!,
+                                                    assignedByName:
+                                                        assignerMember.userName,
+                                                  );
+                                            } else {
+                                              debugPrint(
+                                                'ℹ️ Kendine atanan görev, bildirim oluşturulmadı',
+                                              );
+                                            }
                                           }
 
                                           if (context.mounted) {
@@ -1919,17 +1934,29 @@ class _ProjectDetailPageState extends State<ProjectDetailPage>
                       ),
                     );
 
-                    debugPrint(
-                      '🔔 Mevcut görev için bildirim oluşturuluyor...',
+                    // Sadece farklı kullanıcıya atanmışsa bildirim oluştur
+                    final prefs = await SharedPreferences.getInstance();
+                    final currentUserEmail = prefs.getString(
+                      'loggedInUserEmail',
                     );
-                    await _notificationService.createTaskAssignmentNotification(
-                      assignedToEmail: selectedMember!,
-                      taskTitle: task.title,
-                      projectTitle: widget.project.title,
-                      taskId: task.id!,
-                      projectId: widget.project.id!,
-                      assignedByName: assignerMember.userName,
-                    );
+                    if (selectedMember != currentUserEmail) {
+                      debugPrint(
+                        '🔔 Mevcut görev için bildirim oluşturuluyor...',
+                      );
+                      await _notificationService
+                          .createTaskAssignmentNotification(
+                            assignedToEmail: selectedMember!,
+                            taskTitle: task.title,
+                            projectTitle: widget.project.title,
+                            taskId: task.id!,
+                            projectId: widget.project.id!,
+                            assignedByName: assignerMember.userName,
+                          );
+                    } else {
+                      debugPrint(
+                        'ℹ️ Kendine atanan görev, bildirim oluşturulmadı',
+                      );
+                    }
                   }
 
                   if (mounted) {

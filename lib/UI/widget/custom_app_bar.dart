@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:todo_list/UI/pages/home_page.dart';
 import 'package:todo_list/UI/pages/login_page.dart';
 import 'package:todo_list/UI/pages/notifications_page.dart';
 import 'package:todo_list/data/services/notification_counter_service.dart';
@@ -260,9 +261,9 @@ class _CustomAppBarState extends State<CustomAppBar>
             }
 
             debugPrint('Ana sayfaya yönlendiriliyor...');
-            Navigator.pushNamedAndRemoveUntil(
+            Navigator.pushAndRemoveUntil(
               context,
-              '/',
+              MaterialPageRoute(builder: (context) => const HomePage()),
               (Route<dynamic> route) => false,
             );
           },

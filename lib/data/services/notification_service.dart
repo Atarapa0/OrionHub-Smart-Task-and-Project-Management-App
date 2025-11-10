@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:todo_list/data/services/local_notification_service.dart';
+import 'package:todo_list/data/services/notification_counter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_list/data/models/notification.dart';
 
@@ -187,6 +188,15 @@ class NotificationService {
 
       debugPrint('   ✅ Bildirim veritabanına kaydedildi!');
 
+      // Bildirim sayacını artır (sadece mevcut kullanıcı için)
+      final currentUserEmail = await _getCurrentUserEmail();
+      if (currentUserEmail == userEmail) {
+        await NotificationCounterService().incrementUnreadCount();
+        debugPrint('   📈 Bildirim sayacı artırıldı (mevcut kullanıcı için)');
+      } else {
+        debugPrint('   ℹ️ Farklı kullanıcıya bildirim, sayaç artırılmadı');
+      }
+
       // Push notification gönder
       await _sendPushNotification(
         userEmail: userEmail,
@@ -210,25 +220,25 @@ class NotificationService {
       debugPrint('   - Alıcı: $userEmail');
       debugPrint('   - Başlık: $title');
 
-      // FCM API kullanarak push notification gönder
-      // Bu kısım Firebase Functions veya backend API gerektirir
-      // Şimdilik local notification olarak gösterelim
-
-      // Eğer mevcut kullanıcıya gönderiliyorsa local notification göster
+      // Mevcut kullanıcı kontrolü
       final currentEmail = await _getCurrentUserEmail();
-      if (currentEmail == userEmail) {
-        // Aynı kullanıcıya gönderiliyorsa local notification göster
+
+      // Sadece farklı kullanıcıya gönderiliyorsa local notification göster
+      if (currentEmail != userEmail) {
+        // ID'yi 32-bit integer sınırında tut
+        final notificationId =
+            DateTime.now().millisecondsSinceEpoch % 2147483647;
         await LocalNotificationService.showInstantNotification(
-          id: DateTime.now().millisecondsSinceEpoch,
+          id: notificationId,
           title: title,
           body: message,
+          payload: 'cross_user_notification',
         );
-        debugPrint('   ✅ Local notification gösterildi');
+        debugPrint('   ✅ Cross-user notification gösterildi');
       } else {
         debugPrint(
-          '   ℹ️ Farklı kullanıcıya gönderiliyor, push notification gerekli',
+          '   ℹ️ Aynı kullanıcıya bildirim, local notification atlandı',
         );
-        // Burada gerçek push notification API'si çağrılmalı
       }
     } catch (e) {
       debugPrint('❌ Push notification gönderme hatası: $e');
@@ -282,22 +292,22 @@ class NotificationService {
       debugPrint('   - Görev ID: $taskId');
 
       // Her görev atamasında yeni bildirim oluştur
-        debugPrint('   ✅ Yeni bildirim oluşturuluyor...');
-        await _createNotification(
-          userEmail: assignedToEmail,
-          title: 'Yeni Proje Görevi Atandı',
-          message:
-              '$assignedByName tarafından "$projectTitle" projesinde size "$taskTitle" görevi atandı.',
-          type: 'task_assigned',
-          relatedId: taskId,
-          actionData: {
-            'project_id': projectId,
-            'project_title': projectTitle,
-            'task_title': taskTitle,
-            'assigned_by': assignedByName,
-          },
-        );
-        debugPrint('   ✅ Bildirim başarıyla oluşturuldu!');
+      debugPrint('   ✅ Yeni bildirim oluşturuluyor...');
+      await _createNotification(
+        userEmail: assignedToEmail,
+        title: 'Yeni Proje Görevi Atandı',
+        message:
+            '$assignedByName tarafından "$projectTitle" projesinde size "$taskTitle" görevi atandı.',
+        type: 'task_assigned',
+        relatedId: taskId,
+        actionData: {
+          'project_id': projectId,
+          'project_title': projectTitle,
+          'task_title': taskTitle,
+          'assigned_by': assignedByName,
+        },
+      );
+      debugPrint('   ✅ Bildirim başarıyla oluşturuldu!');
     } catch (e) {
       debugPrint('❌ Görev atama bildirimi oluşturulurken hata: $e');
     }

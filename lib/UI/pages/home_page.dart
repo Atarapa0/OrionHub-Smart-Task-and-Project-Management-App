@@ -208,7 +208,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       );
       debugPrint('Task başlığı: ${task.title}');
 
-      await _taskService.deleteTask(task.id!);
+    await _taskService.deleteTask(task.id!);
 
       // Real-time güncelleme: Görevi listeden kaldır
       setState(() {
@@ -243,22 +243,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           // Filtre ve Arama Bölümü
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+        decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(
+          boxShadow: [
+            BoxShadow(
                   color: Colors.black.withAlpha(13),
                   blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              offset: const Offset(0, 2),
+            ),
+          ],
             ),
             child: Column(
-              children: [
+            children: [
                 // Filtre Butonları
-                Row(
-                  children: [
-                    Expanded(
+              Row(
+                children: [
+                  Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _showFilterDialog,
                         icon: const Icon(Icons.filter_list, size: 20),
@@ -269,9 +269,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
                       ),
+                    ),
+                  ),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
@@ -281,13 +281,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade600,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                           vertical: 12,
                           horizontal: 16,
-                        ),
+                    ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                       ),
                     ),
                   ],
@@ -338,21 +338,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
+          child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+            children: [
           Icon(Icons.task_alt, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          Text(
+            Text(
             'Henüz görev yok',
-            style: TextStyle(
+                                  style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Colors.grey.shade600,
-            ),
-          ),
+                                  ),
+                                ),
           const SizedBox(height: 8),
-          Text(
+                                  Text(
             'İlk görevini eklemek için + butonuna bas',
             style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
           ),
@@ -369,11 +369,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
   // Filtre dialog'unu gösteren method
   void _showFilterDialog() {
@@ -406,13 +406,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               content: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                        mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                        children: [
                     // Öncelik Filtresi
                     const Text(
                       'Öncelik',
-                      style: TextStyle(
+                            style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -448,9 +448,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           _selectedPriority,
                           (value) =>
                               setDialogState(() => _selectedPriority = value),
-                        ),
-                      ],
-                    ),
+                  ),
+                ],
+              ),
                     const SizedBox(height: 16),
 
                     // Durum Filtresi
@@ -487,21 +487,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               setDialogState(() => _selectedStatus = value),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
+                            ),
+                            const SizedBox(height: 16),
 
                     // Tarih Filtresi
                     const Text(
                       'Tarih',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
                         fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      children: [
+                          children: [
                         _buildFilterChip(
                           'all',
                           'Tümü',
@@ -538,10 +538,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               setDialogState(() => _selectedDateFilter = value),
                         ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
+            ),
+          ],
+        ),
+      ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -553,8 +553,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     _loadTasks(); // Filtreleri uygula
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
+        backgroundColor: Colors.blue.shade600,
+        foregroundColor: Colors.white,
                   ),
                   child: const Text('Uygula'),
                 ),
@@ -579,6 +579,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       onSelected: (selected) => onSelected(value),
       selectedColor: Colors.blue.shade100,
       checkmarkColor: Colors.blue.shade700,
-    );
+     );
   }
 }

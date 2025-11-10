@@ -44,9 +44,44 @@ class LocalNotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
+      // Android için notification channel oluştur
+      await _createNotificationChannels();
+
       debugPrint('📲 Local Notifications başlatıldı');
     } catch (e) {
       debugPrint('❌ Local Notifications başlatma hatası: $e');
+    }
+  }
+
+  /// Android için notification channels oluştur
+  static Future<void> _createNotificationChannels() async {
+    try {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notifications
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
+
+      if (androidImplementation != null) {
+        // Anında bildirimler için channel
+        const AndroidNotificationChannel instantChannel =
+            AndroidNotificationChannel(
+              'orionhub_instant',
+              'OrionHub Anında Bildirimler',
+              description: 'OrionHub anında bildirimleri',
+              importance: Importance.max,
+              playSound: true,
+              enableVibration: true,
+              enableLights: true,
+              ledColor: Color(0xFF2196F3),
+              showBadge: true,
+            );
+
+        await androidImplementation.createNotificationChannel(instantChannel);
+        debugPrint('📱 Android notification channel oluşturuldu');
+      }
+    } catch (e) {
+      debugPrint('❌ Notification channel oluşturma hatası: $e');
     }
   }
 
@@ -109,7 +144,16 @@ class LocalNotificationService {
             priority: Priority.high,
             showWhen: true,
             icon: '@mipmap/ic_launcher',
-            color: Color(0xFF2196F3), // Blue color
+            color: Color(0xFF2196F3),
+            enableVibration: true,
+            playSound: true,
+            enableLights: true,
+            ledColor: Color(0xFF2196F3),
+            ledOnMs: 1000,
+            ledOffMs: 500,
+            fullScreenIntent: true,
+            category: AndroidNotificationCategory.message,
+            visibility: NotificationVisibility.public,
           );
 
       const DarwinNotificationDetails iOSPlatformChannelSpecifics =
@@ -133,6 +177,8 @@ class LocalNotificationService {
       );
 
       debugPrint('📨 Anında bildirim gönderildi: $title');
+      debugPrint('📱 Bildirim ID: $id');
+      debugPrint('🔔 Bildirim detayları: $body');
 
       // Bildirim sayacını artır
       NotificationCounterService().incrementUnreadCount();

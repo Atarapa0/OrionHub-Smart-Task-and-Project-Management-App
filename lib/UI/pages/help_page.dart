@@ -47,12 +47,14 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
                   children: [
                     Icon(Icons.help, color: Colors.white, size: 28),
                     SizedBox(width: 12),
-                    Text(
-                      'Yardım & Kullanım Kılavuzu',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Yardım & Kullanım Kılavuzu',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],

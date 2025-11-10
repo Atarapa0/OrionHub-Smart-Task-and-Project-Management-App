@@ -47,9 +47,9 @@ class _ProjectPageState extends State<ProjectPage> {
       if (mounted) {
         setState(() => _isLoading = false);
         if (mounted && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Projeler yüklenirken hata: $e')),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Projeler yüklenirken hata: $e')),
+        );
         }
       }
     }
@@ -221,13 +221,13 @@ class _ProjectPageState extends State<ProjectPage> {
                       context,
                       '/login',
                       (route) => false,
-                    );
+        );
                   },
                 ),
               ),
             );
           }
-          return;
+        return;
         }
       }
 
@@ -241,7 +241,6 @@ class _ProjectPageState extends State<ProjectPage> {
           description: descriptionController.text.isEmpty
               ? null
               : descriptionController.text,
-          createdBy: userEmail,
           createdAt: DateTime.now().toUtc(),
         ),
       );
@@ -255,42 +254,42 @@ class _ProjectPageState extends State<ProjectPage> {
 
       await _loadUserProjects();
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Proje başarıyla oluşturuldu'),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Proje başarıyla oluşturuldu'),
+            ],
           ),
-        );
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
       }
     } catch (e) {
       if (!mounted) return;
       if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
                 SizedBox(width: 8),
-                Expanded(child: Text('Proje oluşturulurken hata: $e')),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+              Expanded(child: Text('Proje oluşturulurken hata: $e')),
+            ],
           ),
-        );
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
       }
     } finally {
       titleController.dispose();
@@ -559,7 +558,6 @@ class _ProjectPageState extends State<ProjectPage> {
             id: project['id'],
             title: project['title'],
             description: project['description'],
-            createdBy: '', // Bu bilgi gerekli değil detay sayfasında
             createdAt: DateTime.parse(project['created_at']),
           );
 

@@ -51,15 +51,16 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 children: [
                   const Icon(Icons.add_task, color: Colors.blue, size: 28),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Yeni Görev Ekle',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  const Expanded(
+                    child: Text(
+                      'Yeni Görev Ekle',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
@@ -132,14 +133,17 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildPriorityChip('low', 'Düşük', Colors.green),
-                        const SizedBox(width: 8),
-                        _buildPriorityChip('medium', 'Orta', Colors.orange),
-                        const SizedBox(width: 8),
-                        _buildPriorityChip('high', 'Yüksek', Colors.red),
-                      ],
+                    Center(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          _buildPriorityChip('low', 'Düşük', Colors.green),
+                          _buildPriorityChip('medium', 'Orta', Colors.orange),
+                          _buildPriorityChip('high', 'Yüksek', Colors.red),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -172,17 +176,18 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     children: [
                       const Icon(Icons.calendar_today),
                       const SizedBox(width: 12),
-                      Text(
-                        selectedDate == null
-                            ? 'Bitiş Tarihi Seç (İsteğe bağlı)'
-                            : 'Bitiş Tarihi: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                        style: TextStyle(
-                          color: selectedDate == null
-                              ? Colors.grey.shade600
-                              : Colors.black87,
+                      Expanded(
+                        child: Text(
+                          selectedDate == null
+                              ? 'Bitiş Tarihi Seç (İsteğe bağlı)'
+                              : 'Bitiş Tarihi: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                          style: TextStyle(
+                            color: selectedDate == null
+                                ? Colors.grey.shade600
+                                : Colors.black87,
+                          ),
                         ),
                       ),
-                      const Spacer(),
                       if (selectedDate != null)
                         IconButton(
                           icon: const Icon(Icons.clear, size: 20),
@@ -224,17 +229,18 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                       children: [
                         const Icon(Icons.access_time),
                         const SizedBox(width: 12),
-                        Text(
-                          selectedTime == null
-                              ? 'Bitiş Saati Seç (İsteğe bağlı)'
-                              : 'Bitiş Saati: ${selectedTime!.format(context)}',
-                          style: TextStyle(
-                            color: selectedTime == null
-                                ? Colors.grey.shade600
-                                : Colors.black87,
+                        Expanded(
+                          child: Text(
+                            selectedTime == null
+                                ? 'Bitiş Saati Seç (İsteğe bağlı)'
+                                : 'Bitiş Saati: ${selectedTime!.format(context)}',
+                            style: TextStyle(
+                              color: selectedTime == null
+                                  ? Colors.grey.shade600
+                                  : Colors.black87,
+                            ),
                           ),
                         ),
-                        const Spacer(),
                         if (selectedTime != null)
                           IconButton(
                             icon: const Icon(Icons.clear, size: 20),

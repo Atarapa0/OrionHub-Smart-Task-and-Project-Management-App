@@ -2,15 +2,17 @@ class Project {
   final String? id;
   final String title;
   final String? description;
-  final String createdBy;
+  final String? ownerId;
   final DateTime createdAt;
+  final List<Map<String, dynamic>>? projectMembers;
 
   Project({
     this.id,
     required this.title,
     this.description,
-    required this.createdBy,
+    this.ownerId,
     required this.createdAt,
+    this.projectMembers,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -18,8 +20,11 @@ class Project {
       id: json['id'],
       title: json['title'],
       description: json['description'],
-      createdBy: json['created_by'],
+      ownerId: json['owner_id'],
       createdAt: DateTime.parse(json['created_at']),
+      projectMembers: json['project_members'] != null 
+          ? List<Map<String, dynamic>>.from(json['project_members'])
+          : null,
     );
   }
 
@@ -28,7 +33,7 @@ class Project {
       'id': id,
       'title': title,
       'description': description,
-      'created_by': createdBy,
+      'owner_id': ownerId,
       'created_at': createdAt.toIso8601String(),
     };
   }
